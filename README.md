@@ -41,7 +41,7 @@ python count_biotypes.py -g <annotation.gtf> <aligned_1.bam> .. <aligned_n.bam>
 Within a python script:
 ```python
 import count_biotypes
-count_biotypes.main(annotation_file_path_, input_bam_file_paths):
+count_biotypes.count_biotypes(annotation_file_path_, input_bam_file_paths):
 ```
 
 If importing, individual functions can be called for a more 
@@ -65,9 +65,9 @@ accession [SRR1304304](http://www.ncbi.nlm.nih.gov/sra/?term=SRR1304304).
 
 ### Parameters
 
-Arguments shown in order received by `main()`.
+Arguments shown in order received by `count_biotypes()`.
 
-Command Line Flag | `main()` argument name | Description
+Command Line Flag | `count_biotypes()` argument name | Description
 ----------------- | -------------------- | -----------
 `--genome-feature-file`, `-g` | `annotation_file` | Required.<br>Path to annotation file.
 `<input_bam_list>` | `input_bam_list` | Required.<br>List of paths to aligned BAM files.

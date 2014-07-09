@@ -22,7 +22,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
-def main(annotation_file, input_bam_list, biotype_flag='gene_type', feature_type='exon', num_lines=10000000):
+def count_biotypes(annotation_file, input_bam_list, biotype_flag='gene_type', feature_type='exon', num_lines=10000000):
     """
     Count the biotypes
     """
@@ -31,7 +31,7 @@ def main(annotation_file, input_bam_list, biotype_flag='gene_type', feature_type
         if not os.path.isfile(annotation_file):
             raise IOError("Fatal error - can't find annotation file {}".format(annotation_file))
     else:
-        raise IOError("Fatal error - annotation file not specified")
+        raise ValueError("Fatal error - annotation file not specified")
     for fname in input_bam_list:
         if not os.path.isfile(fname):
             raise IOError("Fatal error - can't find input file {}".format(fname))
@@ -69,9 +69,6 @@ def main(annotation_file, input_bam_list, biotype_flag='gene_type', feature_type
         plot_title = "{} Read Lengths".format(feature_type.title())
         (hist_png, hist_pdf) = plot_epic_histogram (biotype_lengths, plot_basename, plot_title, False)
         (percent_hist_png, percent_hist_pdf) = plot_epic_histogram (biotype_lengths, plot_basename, plot_title, True)
-            
-    # Done!
-    pass
 
 
 
@@ -101,9 +98,7 @@ def parse_gtf_biotypes (annotation_file, biotype_label='gene_type', count_featur
     biotype_lengths['multiple_features'] = defaultdict(int)
     feature_type_counts = defaultdict(int)
     feature_type_biotype_counts = defaultdict(lambda: defaultdict(int))
-    i = 0
-    for feature in gtffile:
-        i += 1
+    for i, feature in enumerate(gtffile):
         if i % 100000 == 0:
             logging.debug("{} lines processed..".format(i))
         # Collect features and initialise biotype count objects
@@ -111,7 +106,7 @@ def parse_gtf_biotypes (annotation_file, biotype_label='gene_type', count_featur
             # See if we have another annotation that sounds like biotype
             # eg. Human ensembl calls it gene_biotype
             if biotype_label not in feature.attr and biotype_label == 'gene_type':
-                for attr in feature.attr.iterkeys():
+                for attr in feature.attr:
                     if 'biotype' in attr:
                         logging.warning("\nChanging biotype label from {} to {}".format(biotype_label, attr))
                         biotype_label = attr
@@ -143,7 +138,7 @@ def parse_gtf_biotypes (annotation_file, biotype_label='gene_type', count_featur
         logging.info("    {:20}\t{:4} biotypes\t{:6} labelled features".format(ft, num_ft_bts, num_features))
     
     if(used_features == 0):
-        raise Exception('No features have biotypes!')
+        raise ValueError('No features have biotypes!')
     
     return (selected_features, biotype_counts, biotype_lengths)
 
@@ -159,10 +154,8 @@ def count_biotype_overlaps (aligned_bam, selected_features, biotype_counts, biot
     
     # Go through alignments, counting transcript biotypes
     logging.info("\nReading BAM file (each dot is 1000000 lines, will stop at {}): ".format(number_lines), end='')
-    i = 0
     aligned_reads = 0
-    for alnmt in bamfile:
-        i += 1
+    for i, alnmt in enumerate(bamfile):
         if i > int(number_lines):
             i -= 1
             logging.info("Reached {} lines in the aligned file, exiting..".format(number_lines))
@@ -353,7 +346,7 @@ def plot_epic_histogram (biotype_lengths, output_basename, title="Annotation Bio
     cum_count = 0
     first_percentile = (feature_reads + 0.0)/100.0
     nninth_percentile  = ((feature_reads + 0.0)/100.0)*99
-    for x in range(min_length, max_length):
+    for x in xrange(min_length, max_length):
         cum_count += bp_counts[x]
         if (cum_count + 0.0) < first_percentile:
             min_length = x
@@ -378,7 +371,7 @@ def plot_epic_histogram (biotype_lengths, output_basename, title="Annotation Bio
             continue
         values = []
         bt_count = 0
-        for x in range(min_length, max_length):
+        for x in xrange(min_length, max_length):
             if x not in bp_counts:
                 bp_counts[x] = 0
             if x in biotype_lengths[bt]:
@@ -410,7 +403,7 @@ def plot_epic_histogram (biotype_lengths, output_basename, title="Annotation Bio
         i += 1
     
     # TIDY UP AXES
-    if(percentage):
+    if percentage:
         axes.set_ylim((0,100))
     axes.set_xlim((min_length-1,max_length))
     axes.grid(True, zorder=0, which='both', axis='y', linestyle='-', color='#EDEDED', linewidth=1)
@@ -475,6 +468,6 @@ if __name__ == "__main__":
         raise ValueError("Invalid log level: {}".format(log_level))
     logging.basicConfig(filename='count_biotypes.log', format='', level=numeric_log_level)
     
-    # Call main()
-    main(**kwargs)
+    # Call count_biotypes()
+    count_biotypes(**kwargs)
     
