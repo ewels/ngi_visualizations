@@ -3,6 +3,11 @@ Visualizations
 
 A collection of next-gen sequencing visualisation scripts.
 
+* [Count Biotypes](#count-biotypes)
+	* Uses HTSeq to plot read overlaps with differetn feature biotype flags
+
+..more coming soon (hopefully)
+
 ## Count Biotypes
 
 This script takes an aligned BAM file and counts the overlaps with
@@ -21,6 +26,8 @@ overlaps with different types of features - for instance `rRNA` genes,
 generating plots which show the frequency with which different biotype labels
 are overlapped and how these overlaps are distributed throughout different
 alignment lengths.
+
+Overlaps are measured using the [HTSeq library](http://www-huber.embl.de/users/anders/HTSeq/doc/overview.html).
 
 The script is written in Python and can be run on the command line or imported into another python script.
 
@@ -48,7 +55,7 @@ fine-grained approach:
 
 ### Example output
 The following plots were generated from a Total Small RNA run in Human cells,
-accession [SRR1304304](http://www.ncbi.nlm.nih.gov/sra/?term=SRR1304304)
+accession [SRR1304304](http://www.ncbi.nlm.nih.gov/sra/?term=SRR1304304).
 
 ![Biotype overlaps](https://raw.githubusercontent.com/ewels/visualizations/master/examples/SRR1304304_trimmed_aligned_biotypeCounts.png)
 
@@ -58,15 +65,13 @@ accession [SRR1304304](http://www.ncbi.nlm.nih.gov/sra/?term=SRR1304304)
 
 ### Parameters
 
-Command line flags and `count_biotypes.main()` arguments shown (in order received by `main()`).
+Arguments shown in order received by `main()`.
 
-def main(annotation_file, input_bam_list, biotype_flag='gene_type', feature_type='exon', num_lines=10000000, quiet=0):
-
-Command Line Flag | main() argument name | Description
+Command Line Flag | `main()` argument name | Description
 ----------------- | -------------------- | -----------
-`-g`, `--genome-feature-file` | `annotation_file` | Required. Path to annotation file.
+`--genome-feature-file`, `-g` | `annotation_file` | Required. Path to annotation file.
 `<input_bam_list>` | `input_bam_list` | Required. List of paths to aligned BAM files.
-`-b`, `--biotype-flag` | `biotype_flag` | Default: `gene_type` (will also look for any flag containing `biotype`). Name of annotation flag to collect biotype label from.
-`-t`, `--genome-feature` | `feature_type` | Default: `exon`. Type of feature to inspect within GTF file.
-`-n`, `--num-lines` | `num_lines` | Default: 10 million. Number of lines to read from aligned BAM file.
-`-q`, `--quiet` | `quiet` | Default: off. Prevents status messages being printed to stderr.
+`--biotype-flag`, `-b` | `biotype_flag` | Default: `gene_type` (will also look for any flag containing `biotype`). Name of annotation flag to collect biotype label from.
+`--genome-feature`, `-t` | `feature_type` | Default: `exon`. Type of feature to inspect within GTF file.
+`--num-lines`, `-n` | `num_lines` | Default: 10 million. Number of lines to read from aligned BAM file.
+`--quiet`, `-q` | `quiet` | Default: off. Prevents status messages being printed to stderr.
