@@ -6,7 +6,7 @@ A collection of next-gen sequencing visualisation scripts.
 * [Count Biotypes](#count-biotypes)
 	* Uses HTSeq to plot read overlaps with differetn feature biotype flags
 
-..more coming soon (hopefully)
+_..more coming soon (hopefully)_
 
 ## Count Biotypes
 
@@ -27,9 +27,7 @@ generating plots which show the frequency with which different biotype labels
 are overlapped and how these overlaps are distributed throughout different
 alignment lengths.
 
-Overlaps are measured using the [HTSeq library](http://www-huber.embl.de/users/anders/HTSeq/doc/overview.html).
-
-The script is written in Python and can be run on the command line or imported into another python script.
+The script is written in Python and can be run on the command line or imported into another python script. Overlaps are measured using the [HTSeq library](http://www-huber.embl.de/users/anders/HTSeq/doc/overview.html).
 
 ### Usage
 
@@ -75,3 +73,18 @@ Command Line Flag | `main()` argument name | Description
 `--genome-feature`, `-t` | `feature_type` | Default: `exon`. Type of feature to inspect within GTF file.
 `--num-lines`, `-n` | `num_lines` | Default: 10 million. Number of lines to read from aligned BAM file.
 `--quiet`, `-q` | `quiet` | Default: off. Prevents status messages being printed to stderr.
+
+### Dependencies
+
+The script is written in Python and is run on the command line. The following
+Python libraries are required:
+
+* HTSeq
+* matplotlib
+* numpy
+* argparse
+* collections (defaultdict)
+* os
+* sys
+
+

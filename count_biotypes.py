@@ -11,16 +11,10 @@ from __future__ import print_function
 
 import argparse
 from collections import defaultdict
-import datetime
 import HTSeq
 import numpy
 import os
-import re
-import shlex
-import shutil
 import sys
-import subprocess
-import tempfile
 
 # Import matplot lib but avoid default X environment
 import matplotlib
