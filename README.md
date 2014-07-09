@@ -114,6 +114,9 @@ strands and within regions of interest, as specified by a BED file.
 
 	bismark_coverage_curves.pl <coverage_file.cov>
 
+For nicer fonts, download the [OpenSans-Regular.ttf](https://github.com/ewels/visualizations/raw/master/OpenSans-Regular.ttf)
+font into the same directory as the script. Font is from [Google Fonts](https://www.google.com/fonts/specimen/Open+Sans).
+
 ### Example Output
 ![Bismark Coverage Curves Plot](https://raw.githubusercontent.com/ewels/visualizations/master/examples/coverageStats.png)
 
@@ -175,6 +178,9 @@ windows to those overlapping regions of interest, as specified by a BED file.
 ### Usage
 
 	bismark_window_sizes.pl <coverage_file.cov>
+
+For nicer fonts, download the [OpenSans-Regular.ttf](https://github.com/ewels/visualizations/raw/master/OpenSans-Regular.ttf)
+font into the same directory as the script. Font is from [Google Fonts](https://www.google.com/fonts/specimen/Open+Sans).
 
 ### Example Output
 ![Bismark Window Sizes Plot](https://raw.githubusercontent.com/ewels/visualizations/master/examples/windowSizes_wholeGenome.png)
