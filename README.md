@@ -128,9 +128,9 @@ Command Line Flag | Description
 ----------------- | -----------
 `--regions <regions.bed>` | Required.<br>Supply a BED file with regions of interest. The script will show coverage inside and outside these regions
 `--stranded` | Default: No.<br>Split the report up into forward and reverse strands
-`--min_cov` and `--max_cov` | Defaults: 0x, 100x.<br>The minimum and maximum coverage limits to consider / plot
-`--binsize` | Default: 1.<br>The coverage bin size to use - what size steps to use between `--min_cov` and `--max_cov`
-`--numlines` | Default: 1000000.<br>Number of lines to process. More lines gives more accuracy but takes longer to run. Note: if the imput is sorted and your sample biased it's a good idea to specify a large number.
+`--min_cov` and `--max_cov` | Defaults: `0x, 100x`.<br>The minimum and maximum coverage limits to consider / plot
+`--binsize` | Default: `1`.<br>The coverage bin size to use - what size steps to use between `--min_cov` and `--max_cov`
+`--numlines` | Default: `1000000`.<br>Number of lines to process. More lines gives more accuracy but takes longer to run. Note: if the imput is sorted and your sample biased it's a good idea to specify a large number.
 `--append` | Default: `_coverageStats.txt`.<br>String to append to results filenames
 `--quiet` | Suppress status messages
 `--help` | Print help message
@@ -192,10 +192,10 @@ it runs.
 Command Line Flag | Description
 ----------------- | -----------
 `--regions <regions.bed>` | Required.<br>Supply a BED file with regions of interest. Only reads and windows overlapping these regions will be considered.
-`--stranded <for|rev>` | Default: both.<br>Consider reads on only one reference strand
-`--coverage` | Default: 10x.<br>Minumum number of observations required to count a Cytosine
-`--min_counts <comma separated integers>` | Default: 1, 2, 3, 4, 5, 10.<br>List of count thresholds to use - how many different cytosines must be seen within a window for it to pass
-`--window_sizes <comma separated integers, bp>` | Default: `100bp, 200bp, 300bp, 400bp, 500bp, 1kbp, 1.5kbp, 2kbp, 3kbp, 4kbp, 5kbp, 10kbp, 20kbp, 30kbp, 40kbp, 50kbp, 100kbp, 200kbp, 300kbp, 400kbp, 500kbp, 1mbp, 2mbp`.<br>Window sizes to use. Specify in base pairs.
+`--stranded <for / rev>` | Default: both.<br>Consider reads on only one reference strand
+`--coverage` | Default: `10x`.<br>Minumum number of observations required to count a Cytosine
+`--min_counts <comma separated integers>` | Default: `1,2,3,4,5,10`.<br>List of count thresholds to use - how many different cytosines must be seen within a window for it to pass
+`--window_sizes <comma separated integers, bp>` | Default: `100bp,200bp,300bp,400bp,500bp,1kbp,1.5kbp,2kbp,3kbp,4kbp,5kbp,10kbp,20kbp,30kbp,40kbp,50kbp,100kbp,200kbp,300kbp,400kbp,500kbp,1mbp,2mbp`.<br>Window sizes to use. Specify in base pairs.
 `--append` | Default: `_coverageStats.txt`.<br>String to append to results filenames
 `--quiet` | Suppress status messages
 `--help` | Print help message
