@@ -52,17 +52,17 @@ def count_biotypes(annotation_file, input_bam_list, biotype_flag='gene_type', fe
         # Plot bar graph
         plot_basename = os.path.splitext(os.path.basename(fname))[0]
         plot_title = "{} Biotype Alignments".format(feature_type.title())
-        bargraph_fns = plot_bars(biotype_counts, plot_basename, plot_title, True)
-        log_bargraph_fns = plot_bars(biotype_counts, plot_basename, plot_title, False)
+        bargraph_fns = plot_bars(biotype_count_dict['biotype_counts'], plot_basename, plot_title, True)
+        log_bargraph_fns = plot_bars(biotype_count_dict['biotype_counts'], plot_basename, plot_title, False)
         
         # Plot epic histogram
         plot_title = "Read Lengths Overlapping {}s".format(feature_type.title())
-        hist_fns = plot_epic_histogram (biotype_lengths, plot_basename, plot_title, False)
-        percent_hist_fns = plot_epic_histogram (biotype_lengths, plot_basename, plot_title, True)
+        hist_fns = plot_epic_histogram (biotype_count_dict['biotype_lengths'], plot_basename, plot_title, False)
+        percent_hist_fns = plot_epic_histogram (biotype_count_dict['biotype_lengths'], plot_basename, plot_title, True)
 
 
 
-def parse_gtf_biotypes (annotation_file, biotype_label='gene_type', count_feature_type='exon'):
+def parse_gtf_biotypes(annotation_file, biotype_label='gene_type', count_feature_type='exon'):
     """
     Custom function that uses HTSeq core to analyse overlaps
     with annotation features of different biotypes.
@@ -89,7 +89,7 @@ def parse_gtf_biotypes (annotation_file, biotype_label='gene_type', count_featur
     feature_type_counts = defaultdict(int)
     feature_type_biotype_counts = defaultdict(lambda: defaultdict(int))
     for i, feature in enumerate(gtffile):
-        if i % 100000 == 0:
+        if i % 100000 == 0 and i > 0:
             logging.debug("{} lines processed..".format(i))
         # Collect features and initialise biotype count objects
         if feature.type == count_feature_type:
@@ -133,7 +133,7 @@ def parse_gtf_biotypes (annotation_file, biotype_label='gene_type', count_featur
     return {'selected_features': selected_features, 'biotype_count_dict': {'biotype_counts': biotype_counts, 'biotype_lengths':biotype_lengths}}
 
 
-def count_biotype_overlaps (aligned_bam, selected_features, biotype_counts, biotype_lengths, number_lines=10000000):
+def count_biotype_overlaps(aligned_bam, selected_features, biotype_count_dict, number_lines=10000000):
     """
     Go thorough an aligned bam, counting overlaps with biotype features
     """
@@ -143,14 +143,14 @@ def count_biotype_overlaps (aligned_bam, selected_features, biotype_counts, biot
     bamfile = HTSeq.BAM_Reader( aligned_bam )
     
     # Go through alignments, counting transcript biotypes
-    logging.info("\nReading BAM file (each dot is 1000000 lines, will stop at {}): ".format(number_lines), end='')
+    logging.info("\nReading BAM file (will stop at {}): ".format(number_lines))
     aligned_reads = 0
     for i, alnmt in enumerate(bamfile):
         if i > int(number_lines):
             i -= 1
             logging.info("Reached {} lines in the aligned file, exiting..".format(number_lines))
             break
-        if i % 1000000 == 0:
+        if i % 1000000 == 0 and i > 0:
             logging.debug("{} lines processed..".format(i))
         
         if alnmt.aligned:
@@ -168,21 +168,21 @@ def count_biotype_overlaps (aligned_bam, selected_features, biotype_counts, biot
             elif len(iset) == 0:
                 key = 'no_overlap'
                     
-            biotype_counts[key] += 1
-            biotype_lengths[key][alnmt.iv.length] += 1
+            biotype_count_dict['biotype_counts'][key] += 1
+            biotype_count_dict['biotype_lengths'][key][alnmt.iv.length] += 1
     
     logging.info ("\n{} overlaps found from {} aligned reads ({} reads total)" \
-                    .format(aligned_reads-biotype_counts['no_overlap'], aligned_reads, i))
+                    .format(aligned_reads-biotype_count_dict['biotype_counts']['no_overlap'], aligned_reads, i))
     logging.info ("{} reads had multiple feature overlaps\n" \
-                    .format(biotype_counts['multiple_features']))
+                    .format(biotype_count_dict['biotype_counts']['multiple_features']))
     
     
     # Make a string table out of the counts
     counts_string = 'Type\tRead Count\n'
-    for biotype in sorted(biotype_counts, key=biotype_counts.get, reverse=True):
-        if biotype_counts[biotype] == 0:
+    for biotype in sorted(biotype_count_dict['biotype_counts'], key=biotype_count_dict['biotype_counts'].get, reverse=True):
+        if biotype_count_dict['biotype_counts'][biotype] == 0:
             continue
-        counts_string += "{}\t{}{}".format(biotype, biotype_counts[biotype], os.linesep)
+        counts_string += "{}\t{}{}".format(biotype, biotype_count_dict['biotype_counts'][biotype], os.linesep)
     
     # Save to file
     file_basename = os.path.splitext(os.path.basename(aligned_bam))[0]
@@ -194,13 +194,13 @@ def count_biotype_overlaps (aligned_bam, selected_features, biotype_counts, biot
         raise IOError(e)
     
     # Return the counts
-    return {'biotype_counts': biotype_counts, 'biotype_lengths': biotype_lengths}
+    return biotype_count_dict
 
 
 
 
 
-def plot_bars (biotype_counts, output_basename, title="Annotation Biotype Alignments", logx=True):
+def plot_bars(biotype_counts, output_basename, title="Annotation Biotype Alignments", logx=True):
     """
     Plots bar graph of alignment biotypes using matplotlib pyplot
     Input: dict of biotype labels and associated counts
@@ -309,7 +309,7 @@ def plot_bars (biotype_counts, output_basename, title="Annotation Biotype Alignm
     return {'png': png_fn, 'pdf': pdf_fn}
 
 
-def plot_epic_histogram (biotype_lengths, output_basename, title="Annotation Biotype Lengths", percentage=False):
+def plot_epic_histogram(biotype_lengths, output_basename, title="Annotation Biotype Lengths", percentage=False):
     """
     Plot awesome histogram of read lengths, with bars broken up by feature
     biotype overlap
@@ -459,10 +459,12 @@ if __name__ == "__main__":
     kwargs = vars(parser.parse_args())
     
     # Initialise logger
-    numeric_log_level = getattr(logging, log_level.upper(), None)
+    numeric_log_level = getattr(logging, kwargs['log_level'].upper(), None)
     if not isinstance(numeric_log_level, int):
-        raise ValueError("Invalid log level: {}".format(log_level))
+        raise ValueError("Invalid log level: {}".format(kwargs['log_level']))
     logging.basicConfig(filename='count_biotypes.log', format='', level=numeric_log_level)
+    # Remove logging paramter
+    kwargs.pop('log_level', None)
     
     # Call count_biotypes()
     count_biotypes(**kwargs)
