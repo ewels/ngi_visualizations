@@ -72,7 +72,7 @@ Command Line Flag | `main()` argument name | Description
 `--biotype-flag`, `-b` | `biotype_flag` | Default: `gene_type` (will also look for any flag containing `biotype`). Name of annotation flag to collect biotype label from.
 `--genome-feature`, `-t` | `feature_type` | Default: `exon`. Type of feature to inspect within GTF file.
 `--num-lines`, `-n` | `num_lines` | Default: 10 million. Number of lines to read from aligned BAM file.
-`--quiet`, `-q` | `quiet` | Default: off. Prevents status messages being printed to stderr.
+`--log`, `-l` | `log_level` | Default: debug. Specify the level of logging: debug, info or warning.
 
 ### Dependencies
 
@@ -84,7 +84,7 @@ Python libraries are required:
 * [numpy](http://www.numpy.org/)
 * argparse
 * collections (defaultdict)
+* logging
 * os
-* sys
 
 
