@@ -5,8 +5,10 @@ A collection of next-gen sequencing visualisation scripts.
 
 * [Count Biotypes](#count-biotypes)
 	* Uses HTSeq to plot read overlaps with differetn feature biotype flags
-
-_..more coming soon (hopefully)_
+* [Bismark Coverage Curves](#bismark-coverage-curves)
+	* Plots the proportion of cytosines meeting increasing coverage thresholds
+* [Bismark Window Sizes](#bismark-window-sizes)
+	* Plots the proportion of windows passing observation thresholds with increasing window sizes
 
 ## Count Biotypes
 
@@ -67,12 +69,12 @@ Arguments shown in order received by `main()`.
 
 Command Line Flag | `main()` argument name | Description
 ----------------- | -------------------- | -----------
-`--genome-feature-file`, `-g` | `annotation_file` | Required. Path to annotation file.
-`<input_bam_list>` | `input_bam_list` | Required. List of paths to aligned BAM files.
-`--biotype-flag`, `-b` | `biotype_flag` | Default: `gene_type` (will also look for any flag containing `biotype`). Name of annotation flag to collect biotype label from.
-`--genome-feature`, `-t` | `feature_type` | Default: `exon`. Type of feature to inspect within GTF file.
-`--num-lines`, `-n` | `num_lines` | Default: 10 million. Number of lines to read from aligned BAM file.
-`--log`, `-l` | `log_level` | Default: debug. Specify the level of logging: debug, info or warning.
+`--genome-feature-file`, `-g` | `annotation_file` | Required.<br>Path to annotation file.
+`<input_bam_list>` | `input_bam_list` | Required.<br>List of paths to aligned BAM files.
+`--biotype-flag`, `-b` | `biotype_flag` | Default: `gene_type` (will also look for any flag containing `biotype`).<br>Name of annotation flag to collect biotype label from.
+`--genome-feature`, `-t` | `feature_type` | Default: `exon`.<br>Type of feature to inspect within GTF file.
+`--num-lines`, `-n` | `num_lines` | Default: 10 million.<br>Number of lines to read from aligned BAM file.
+`--log`, `-l` | `log_level` | Default: debug.<br>Specify the level of logging: debug, info or warning.
 
 ### Dependencies
 
@@ -113,9 +115,9 @@ strands and within regions of interest, as specified by a BED file.
 	bismark_coverage_curves.pl <coverage_file.cov>
 
 ### Example Output
-![Bismark Coverage Curves Plot](https://raw.githubusercontent.com/ewels/bismark_addons/master/examples/coverageStats.png)
+![Bismark Coverage Curves Plot](https://raw.githubusercontent.com/ewels/visualizations/master/examples/coverageStats.png)
 
-See additional [text output](https://raw.githubusercontent.com/ewels/bismark_addons/master/examples/coverageStats.txt)
+See additional [text output](https://raw.githubusercontent.com/ewels/visualizations/master/examples/coverageStats.txt)
 
 ### Parameters
 
@@ -124,12 +126,12 @@ it runs.
 
 Command Line Flag | Description
 ----------------- | -----------
-`--regions <regions.bed>` | Supply a BED file with regions of interest. The script will show coverage inside and outside these regions
-`--stranded` | Default: No. Split the report up into forward and reverse strands
-`--min_cov` and `--max_cov` | Defaults: 0x, 100x. The minimum and maximum coverage limits to consider / plot
-`--binsize` | Default: 1. The coverage bin size to use - what size steps to use between `--min_cov` and `--max_cov`
-`--numlines` | Default: 1000000. Number of lines to process. More lines gives more accuracy but takes longer to run. Note: if the imput is sorted and your sample biased it's a good idea to specify a large number.
-`--append` | Default: `_coverageStats.txt`. String to append to results filenames
+`--regions <regions.bed>` | Required.<br>Supply a BED file with regions of interest. The script will show coverage inside and outside these regions
+`--stranded` | Default: No.<br>Split the report up into forward and reverse strands
+`--min_cov` and `--max_cov` | Defaults: 0x, 100x.<br>The minimum and maximum coverage limits to consider / plot
+`--binsize` | Default: 1.<br>The coverage bin size to use - what size steps to use between `--min_cov` and `--max_cov`
+`--numlines` | Default: 1000000.<br>Number of lines to process. More lines gives more accuracy but takes longer to run. Note: if the imput is sorted and your sample biased it's a good idea to specify a large number.
+`--append` | Default: `_coverageStats.txt`.<br>String to append to results filenames
 `--quiet` | Suppress status messages
 `--help` | Print help message
 
@@ -153,7 +155,7 @@ To plot the graphs, you'll also need the following modules:
 ---------------------------------------------------------------------------
 
 
-## Window Sizes
+## Bismark Window Sizes
 
 [Bismark](http://www.bioinformatics.babraham.ac.uk/projects/bismark/) is a tool
 used for aligning Bisfulfite-Sequencing libraries, giving information about
@@ -175,11 +177,11 @@ windows to those overlapping regions of interest, as specified by a BED file.
 	bismark_window_sizes.pl <coverage_file.cov>
 
 ### Example Output
-![Bismark Window Sizes Plot](https://raw.githubusercontent.com/ewels/bismark_addons/master/examples/windowSizes_wholeGenome.png)
+![Bismark Window Sizes Plot](https://raw.githubusercontent.com/ewels/visualizations/master/examples/windowSizes_wholeGenome.png)
 
-![Bismark Window Sizes Plot](https://raw.githubusercontent.com/ewels/bismark_addons/master/examples/windowSizes_roi.png)
+![Bismark Window Sizes Plot](https://raw.githubusercontent.com/ewels/visualizations/master/examples/windowSizes_roi.png)
 
-See additional text output: [first plot](https://raw.githubusercontent.com/ewels/bismark_addons/master/examples/windowSizes_wholeGenome.txt), [second plot](https://raw.githubusercontent.com/ewels/bismark_addons/master/examples/windowSizes_roi.txt)
+See additional text output: [first plot](https://raw.githubusercontent.com/ewels/visualizations/master/examples/windowSizes_wholeGenome.txt), [second plot](https://raw.githubusercontent.com/ewels/visualizations/master/examples/windowSizes_roi.txt)
 
 
 ### Parameters
@@ -189,13 +191,12 @@ it runs.
 
 Command Line Flag | Description
 ----------------- | -----------
-
-`--regions <regions.bed>` | Supply a BED file with regions of interest. Only reads and windows overlapping these regions will be considered.
-`--stranded <for|rev>` | Default: both. Consider reads on only one reference strand
-`--coverage` | Default: 10x. Minumum number of observations required to count a Cytosine
-`--min_counts <comma separated integers>` | Default: 1, 2, 3, 4, 5, 10. List of count thresholds to use - how many different cytosines must be seen within a window for it to pass
-`--window_sizes <comma separated integers, bp>` | Default: 100bp, 200bp, 300bp, 400bp, 500bp, 1kbp, 1.5kbp, 2kbp, 3kbp, 4kbp, 5kbp, 10kbp, 20kbp, 30kbp, 40kbp, 50kbp, 100kbp, 200kbp, 300kbp, 400kbp, 500kbp, 1mbp, 2mbp. Window sizes to use. Specify in base pairs.
-`--append` | Default: `_coverageStats.txt`. String to append to results filenames
+`--regions <regions.bed>` | Required.<br>Supply a BED file with regions of interest. Only reads and windows overlapping these regions will be considered.
+`--stranded <for|rev>` | Default: both.<br>Consider reads on only one reference strand
+`--coverage` | Default: 10x.<br>Minumum number of observations required to count a Cytosine
+`--min_counts <comma separated integers>` | Default: 1, 2, 3, 4, 5, 10.<br>List of count thresholds to use - how many different cytosines must be seen within a window for it to pass
+`--window_sizes <comma separated integers, bp>` | Default: `100bp, 200bp, 300bp, 400bp, 500bp, 1kbp, 1.5kbp, 2kbp, 3kbp, 4kbp, 5kbp, 10kbp, 20kbp, 30kbp, 40kbp, 50kbp, 100kbp, 200kbp, 300kbp, 400kbp, 500kbp, 1mbp, 2mbp`.<br>Window sizes to use. Specify in base pairs.
+`--append` | Default: `_coverageStats.txt`.<br>String to append to results filenames
 `--quiet` | Suppress status messages
 `--help` | Print help message
 
