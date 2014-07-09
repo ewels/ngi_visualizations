@@ -27,7 +27,7 @@ generating plots which show the frequency with which different biotype labels
 are overlapped and how these overlaps are distributed throughout different
 alignment lengths.
 
-The script is written in Python and can be run on the command line or imported into another python script. Overlaps are measured using the [HTSeq library](http://www-huber.embl.de/users/anders/HTSeq/doc/overview.html).
+The script is written in Python and can be run on the command line or imported into another python script. Overlaps are measured using the [HTSeq library](http://www-huber.embl.de/users/anders/HTSeq/).
 
 ### Usage
 
@@ -79,9 +79,9 @@ Command Line Flag | `main()` argument name | Description
 The script is written in Python and is run on the command line. The following
 Python libraries are required:
 
-* HTSeq
-* matplotlib
-* numpy
+* [HTSeq](http://www-huber.embl.de/users/anders/HTSeq/)
+* [matplotlib](http://matplotlib.org/)
+* [numpy](http://www.numpy.org/)
 * argparse
 * collections (defaultdict)
 * os
