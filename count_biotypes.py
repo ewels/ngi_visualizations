@@ -37,38 +37,28 @@ def count_biotypes(annotation_file, input_bam_list, biotype_flag='gene_type', fe
             raise IOError("Fatal error - can't find input file {}".format(fname))
     
     # Parse the GTF file
-    (selected_features, empty_biotype_counts, empty_biotype_lengths) = parse_gtf_biotypes(annotation_file, biotype_flag, feature_type)
+    biotype_annotation = parse_gtf_biotypes(annotation_file, biotype_flag, feature_type)
     
     # Process files
     for fname in input_bam_list:
         logging.info("Processing {}".format(fname))
-        # Set up filenames
-        file_basename = os.path.splitext(os.path.basename(fname))[0]
-        counts_file = "{}_biotypeCounts.txt".format(file_basename)
         
-        # Make copies of the biotype dicts
-        biotype_counts = empty_biotype_counts.copy()
-        biotype_lengths = empty_biotype_lengths.copy()
+        # Make a copy of the biotype dicts
+        biotype_count_dict = biotype_annotation['biotype_count_dict'].copy()
         
         # Generate counts
-        (biotype_counts, biotype_lengths, counts_string) = count_biotype_overlaps(fname, selected_features, biotype_counts, biotype_lengths, num_lines)
-        # Save to file
-        try:
-            with open(counts_file, 'w') as fh:
-                print(counts_string, file=fh);
-        except IOError as e:
-            raise IOError(e)
+        biotype_count_dict = count_biotype_overlaps(fname, biotype_annotation['selected_features'], biotype_count_dict, num_lines)
         
         # Plot bar graph
         plot_basename = os.path.splitext(os.path.basename(fname))[0]
         plot_title = "{} Biotype Alignments".format(feature_type.title())
-        (bargraph_png, bargraph_pdf) = plot_bars(biotype_counts, plot_basename, plot_title, True)
-        (log_bargraph_png, log_bargraph_pdf) = plot_bars(biotype_counts, plot_basename, plot_title, False)
+        bargraph_fns = plot_bars(biotype_counts, plot_basename, plot_title, True)
+        log_bargraph_fns = plot_bars(biotype_counts, plot_basename, plot_title, False)
         
         # Plot epic histogram
-        plot_title = "{} Read Lengths".format(feature_type.title())
-        (hist_png, hist_pdf) = plot_epic_histogram (biotype_lengths, plot_basename, plot_title, False)
-        (percent_hist_png, percent_hist_pdf) = plot_epic_histogram (biotype_lengths, plot_basename, plot_title, True)
+        plot_title = "Read Lengths Overlapping {}s".format(feature_type.title())
+        hist_fns = plot_epic_histogram (biotype_lengths, plot_basename, plot_title, False)
+        percent_hist_fns = plot_epic_histogram (biotype_lengths, plot_basename, plot_title, True)
 
 
 
@@ -140,7 +130,7 @@ def parse_gtf_biotypes (annotation_file, biotype_label='gene_type', count_featur
     if(used_features == 0):
         raise ValueError('No features have biotypes!')
     
-    return (selected_features, biotype_counts, biotype_lengths)
+    return {'selected_features': selected_features, 'biotype_count_dict': {'biotype_counts': biotype_counts, 'biotype_lengths':biotype_lengths}}
 
 
 def count_biotype_overlaps (aligned_bam, selected_features, biotype_counts, biotype_lengths, number_lines=10000000):
@@ -194,8 +184,17 @@ def count_biotype_overlaps (aligned_bam, selected_features, biotype_counts, biot
             continue
         counts_string += "{}\t{}{}".format(biotype, biotype_counts[biotype], os.linesep)
     
+    # Save to file
+    file_basename = os.path.splitext(os.path.basename(aligned_bam))[0]
+    counts_file = "{}_biotypeCounts.txt".format(file_basename)
+    try:
+        with open(counts_file, 'w') as fh:
+            print(counts_string, file=fh);
+    except IOError as e:
+        raise IOError(e)
+    
     # Return the counts
-    return (biotype_counts, biotype_lengths, counts_string)
+    return {'biotype_counts': biotype_counts, 'biotype_lengths': biotype_lengths}
 
 
 
@@ -307,7 +306,7 @@ def plot_bars (biotype_counts, output_basename, title="Annotation Biotype Alignm
     fig.savefig(pdf_fn)
     
     # Return the filenames
-    return(png_fn, pdf_fn)
+    return {'png': png_fn, 'pdf': pdf_fn}
 
 
 def plot_epic_histogram (biotype_lengths, output_basename, title="Annotation Biotype Lengths", percentage=False):
@@ -335,11 +334,8 @@ def plot_epic_histogram (biotype_lengths, output_basename, title="Annotation Bio
             else:
                 feature_reads += biotype_lengths[bt][x]
                 bp_counts[x] += biotype_lengths[bt][x]
-                if x < min_length:
-                    min_length = x
-                if x > max_length:
-                    max_length = x
-    
+                min_length = min(x, min_length)
+                max_length = max(x, max_length)    
     
     # CUT OFF EXTREME READ LENGTHS
     # Trim off top and bottom 1% read lengths
@@ -442,7 +438,7 @@ def plot_epic_histogram (biotype_lengths, output_basename, title="Annotation Bio
     fig.savefig(pdf_fn)
     
     # Return the filenames
-    return(png_fn, pdf_fn)
+    return {'png': png_fn, 'pdf': pdf_fn}
 
 
 if __name__ == "__main__":
