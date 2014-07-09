@@ -39,6 +39,7 @@ python count_biotypes.py -g <annotation.gtf> <aligned_1.bam> .. <aligned_n.bam>
 ```
 
 Within a python script:
+
 ```python
 import count_biotypes
 count_biotypes.count_biotypes(annotation_file_path_, input_bam_file_paths):
@@ -46,6 +47,7 @@ count_biotypes.count_biotypes(annotation_file_path_, input_bam_file_paths):
 
 If importing, individual functions can be called for a more 
 fine-grained approach:
+
 ```python
 (ftrs, bt_cts, bt_lnths) = count_biotypes.parse_gtf_biotypes(annotation_file_path)
 (counts, lengths, output) = count_biotype_overlaps (aligned_bam, ftrs, bt_cts, bt_lnths)
@@ -74,7 +76,7 @@ Command Line Flag | `count_biotypes()` argument name | Description
 `--biotype-flag`, `-b` | `biotype_flag` | Default: `gene_type` (will also look for any flag containing `biotype`).<br>Name of annotation flag to collect biotype label from.
 `--genome-feature`, `-t` | `feature_type` | Default: `exon`.<br>Type of feature to inspect within GTF file.
 `--num-lines`, `-n` | `num_lines` | Default: 10 million.<br>Number of lines to read from aligned BAM file.
-`--log`, `-l` | `log_level` | Default: debug.<br>Specify the level of logging: debug, info or warning.
+`--log`, `-l` | `log_level` | Default: info.<br>Specify the level of logging: debug, info or warning.
 
 ### Dependencies
 
