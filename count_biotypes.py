@@ -517,23 +517,27 @@ if __name__ == "__main__":
                         help="Type of annotation feature to count")
     parser.add_argument("-b", "--biotype-flag", dest="biotype_flag", default='gene_type',
                         help="GTF biotype flag (default = gene_type or *biotype*)")
-    parser.add_argument("-n", "--num-lines", dest="num_lines", default=10000000,
+    parser.add_argument("-n", "--num-lines", dest="num_lines", type=int, default=10000000,
                         help="Number of alignments to query")
     parser.add_argument("-c", "--cols", dest="equidistant_cols", action="store_true",
                         help="Plot graphs using equidistant colours to prevent duplicated label colours")
-    parser.add_argument("-l", "--log", dest="log_level", default='info',
-                        help="Logging level: debug / info / warning")
+    parser.add_argument("-l", "--log", dest="log_level", default='info', choices=['debug', 'info', 'warning'],
+                        help="Level of log messages to display")
+    parser.add_argument("-u", "--log-output", dest="log_output", default='stdout',
+                        help="Log output filename. Default: stdout")
     parser.add_argument("input_bam_list", metavar='<BAM file>', nargs="+",
                         help="List of input BAM filenames")
     kwargs = vars(parser.parse_args())
     
     # Initialise logger
     numeric_log_level = getattr(logging, kwargs['log_level'].upper(), None)
-    if not isinstance(numeric_log_level, int):
-        raise ValueError("Invalid log level: {}".format(kwargs['log_level']))
-    logging.basicConfig(filename='count_biotypes.log', format='', level=numeric_log_level)
-    # Remove logging paramter
+    if kwargs['log_output'] != 'stdout':
+        logging.basicConfig(filename=kwargs['log_output'], format='', level=numeric_log_level) 
+    else:
+        logging.basicConfig(format='', level=numeric_log_level)
+    # Remove logging parameters
     kwargs.pop('log_level', None)
+    kwargs.pop('log_output', None)
     
     # Call count_biotypes()
     count_biotypes(**kwargs)
