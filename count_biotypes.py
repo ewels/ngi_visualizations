@@ -21,7 +21,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-def count_biotypes(annotation_file, input_bam_list, biotype_flag='gene_type', feature_type='exon', num_lines=10000000):
+def count_biotypes(annotation_file, input_bam_list, biotype_flag='gene_type', feature_type='exon', num_lines=10000000, equidistant_cols=False):
     """
     Count the biotypes
     """
@@ -56,8 +56,8 @@ def count_biotypes(annotation_file, input_bam_list, biotype_flag='gene_type', fe
         
         # Plot epic histogram
         plot_title = "Read Lengths Overlapping {}s".format(feature_type.title())
-        hist_fns = plot_epic_histogram (biotype_count_dict['biotype_lengths'], plot_basename, plot_title, False)
-        percent_hist_fns = plot_epic_histogram (biotype_count_dict['biotype_lengths'], plot_basename, plot_title, True)
+        hist_fns = plot_epic_histogram (biotype_count_dict['biotype_lengths'], plot_basename, plot_title, False, equidistant_cols)
+        percent_hist_fns = plot_epic_histogram (biotype_count_dict['biotype_lengths'], plot_basename, plot_title, True, equidistant_cols)
 
 
 
@@ -124,7 +124,7 @@ def parse_gtf_biotypes(annotation_file, biotype_label='gene_type', count_feature
         num_features = 0
         for c,d in feature_type_biotype_counts[ft].iteritems():
             num_features += d
-        logging.info("    {:20}\t{:4} biotypes\t{:6} labelled features".format(ft, num_ft_bts, num_features))
+        logging.info("    {:20}\t{:4} biotypes\t{:8} labelled features".format(ft, num_ft_bts, num_features))
     
     if(used_features == 0):
         raise ValueError('No features have biotypes!')
@@ -308,7 +308,7 @@ def plot_bars(biotype_counts, output_basename, title="Annotation Biotype Alignme
     return {'png': png_fn, 'pdf': pdf_fn}
 
 
-def plot_epic_histogram(biotype_lengths, output_basename, title="Annotation Biotype Lengths", percentage=False):
+def plot_epic_histogram(biotype_lengths, output_basename, title="Annotation Biotype Lengths", percentage=False, use_equidistant_cols=False):
     """
     Plot awesome histogram of read lengths, with bars broken up by feature
     biotype overlap
@@ -381,7 +381,7 @@ def plot_epic_histogram(biotype_lengths, output_basename, title="Annotation Biot
     i = 0
     last_values = [0]*(max_length - min_length)
     legend_labels = []
-    cols = distinguishable_colours(len(bars))
+    cols = distinguishable_colours(len(bars), use_equidistant_cols)
     for (count, bar) in sorted(bars.items(), reverse=True):
         (bt, values) = bar
         if(percentage):
@@ -443,12 +443,18 @@ def plot_epic_histogram(biotype_lengths, output_basename, title="Annotation Biot
 
 # Stolen from @wefer
 # https://github.com/wefer/color_picker/blob/master/dist_colors.py
-def distinguishable_colours(n_colours):
+def distinguishable_colours(n_colours, use_equidistant_cols):
     defaults = ['#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c',
                 '#fdbf6f','#ff7f00','#cab2d6','#6a3d9a','#ffff99','#b15928']*10
+    
+    # Do we want equidistant colours?
+    if not use_equidistant_cols:
+        return defaults
+    
+    
     # Import the packages that we need
     try:
-        from colormath.color_objects import sRGBcolor, Labcolor
+        from colormath.color_objects import sRGBColor, LabColor
         from colormath.color_conversions import convert_color
         from matplotlib.colors import rgb2hex
     # fall back on a simple list
@@ -473,8 +479,8 @@ def distinguishable_colours(n_colours):
         return defaults
 
     #Convert to Lab colourspace
-    lab = numpy.array([list(convert_color(sRGBcolor(i[0], i[1], i[2]), Labcolor).get_value_tuple()) for i in rgb])
-    bglab = list(convert_color(sRGBcolor(bg[0], bg[1], bg[2]), Labcolor).get_value_tuple())
+    lab = numpy.array([list(convert_color(sRGBColor(i[0], i[1], i[2]), LabColor).get_value_tuple()) for i in rgb])
+    bglab = list(convert_color(sRGBColor(bg[0], bg[1], bg[2]), LabColor).get_value_tuple())
 
     #Compute the distance from background to candicate colours
     arr_length = len(rgb)
@@ -513,6 +519,8 @@ if __name__ == "__main__":
                         help="GTF biotype flag (default = gene_type or *biotype*)")
     parser.add_argument("-n", "--num-lines", dest="num_lines", default=10000000,
                         help="Number of alignments to query")
+    parser.add_argument("-c", "--cols", dest="equidistant_cols", action="store_true",
+                        help="Plot graphs using equidistant colours to prevent duplicated label colours")
     parser.add_argument("-l", "--log", dest="log_level", default='info',
                         help="Logging level: debug / info / warning")
     parser.add_argument("input_bam_list", metavar='<BAM file>', nargs="+",
