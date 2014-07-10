@@ -517,7 +517,7 @@ if __name__ == "__main__":
                         help="Type of annotation feature to count")
     parser.add_argument("-b", "--biotype-flag", dest="biotype_flag", default='gene_type',
                         help="GTF biotype flag (default = gene_type or *biotype*)")
-    parser.add_argument("-n", "--num-lines", dest="num_lines", default=10000000,
+    parser.add_argument("-n", "--num-lines", dest="num_lines", type=int, default=10000000,
                         help="Number of alignments to query")
     parser.add_argument("-c", "--cols", dest="equidistant_cols", action="store_true",
                         help="Plot graphs using equidistant colours to prevent duplicated label colours")
