@@ -263,7 +263,7 @@ can be shared as single files and viewed in any web browser.
 
 ![Bowtie Alignments](https://raw.githubusercontent.com/ewels/visualizations/master/examples/bowtie_align_screenshot.png)
 
-See the example report here: [bowtie_reoprt.html](https://raw.githubusercontent.com/ewels/visualizations/master/examples/bowtie_report.html)
+See the example report here: [bowtie_report.html](https://rawgit.com/ewels/visualizations/master/examples/bowtie_report.html)
 
 ### Parameters
 
