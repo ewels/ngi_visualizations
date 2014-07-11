@@ -261,7 +261,9 @@ can be shared as single files and viewed in any web browser.
 
 ### Example Output
 
-_coming soon_
+![Bowtie Alignments](https://raw.githubusercontent.com/ewels/visualizations/master/examples/bowtie_align_screenshot.png)
+
+See the example report here: [bowtie_reoprt.html](https://raw.githubusercontent.com/ewels/visualizations/master/examples/bowtie_report.html)
 
 ### Parameters
 
