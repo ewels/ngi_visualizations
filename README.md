@@ -4,13 +4,13 @@ Visualizations
 A collection of next-gen sequencing visualisation scripts.
 
 * [Count Biotypes](#count-biotypes)
-	* Uses HTSeq to plot read overlaps with differetn feature biotype flags
+	* Uses HTSeq to plot read overlaps with different feature biotype flags
 * Bismark Addons
 	* [Bismark Coverage Curves](#bismark-coverage-curves) - Plots the proportion of cytosines meeting increasing coverage thresholds
 	* [Bismark Window Sizes](#bismark-window-sizes) - Plots the proportion of windows passing observation thresholds with increasing window sizes
 * [Alignment Summaries](#alignment-reports)
-	* Bowtie Reports - Parses log files containing alignment stats from bowtie or bowtie 2 and generates overview HTML reports
-	* Tophat Reports - Parses log files containing alignment stats from tophat and generates overview HTML reports
+	* Two scripts to parse log files containing alignment stats from bowtie,
+		bowtie 2 or tophat and generate overview HTML reports
 
 ## Count Biotypes
 
@@ -265,10 +265,10 @@ _coming soon_
 
 ### Parameters
 
-None. Thes script is quite basic. It will generate a file in the current directory called bowtie_report.html, overwriting any existing file with
-the same name.
+None. These scripts are quite basic. They generate a file in the current directory called `bowtie_report.html` or `tophat_report.html`, overwriting
+any that exist with the same name.
 
-Each input log file must contain alignment stats for only one alignment.
+**Note**: Each input log file must contain alignment stats for only one alignment.
 
 ### Dependencies
 
