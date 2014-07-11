@@ -2,7 +2,6 @@
 
 use warnings;
 use strict;
-use Data::Dumper;
 
 unless (defined @ARGV) {
   die "usage is bowtie_report.pl *.out\n";
