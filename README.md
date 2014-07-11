@@ -8,9 +8,9 @@ A collection of next-gen sequencing visualisation scripts.
 * Bismark Addons
 	* [Bismark Coverage Curves](#bismark-coverage-curves) - Plots the proportion of cytosines meeting increasing coverage thresholds
 	* [Bismark Window Sizes](#bismark-window-sizes) - Plots the proportion of windows passing observation thresholds with increasing window sizes
-* Alignment Summaries
-	* [Bowtie Reports](#bowtie-reports) - Parses log files containing alignment stats from bowtie or bowtie 2 and generates overview HTML reports
-	* [Tophat Reports](#tophat-reports) - Parses log files containing alignment stats from tophat and generates overview HTML reports
+* [Alignment Summaries](#Alignment Reports)
+	* Bowtie Reports - Parses log files containing alignment stats from bowtie or bowtie 2 and generates overview HTML reports
+	* Tophat Reports - Parses log files containing alignment stats from tophat and generates overview HTML reports
 
 ## Count Biotypes
 
