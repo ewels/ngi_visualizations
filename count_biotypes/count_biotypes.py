@@ -87,6 +87,7 @@ def parse_gtf_biotypes(annotation_file, biotype_label='gene_type', count_feature
     biotype_lengths['multiple_features'] = defaultdict(int)
     feature_type_counts = defaultdict(int)
     feature_type_biotype_counts = defaultdict(lambda: defaultdict(int))
+    
     for i, feature in enumerate(gtffile):
         if i % 100000 == 0 and i > 0:
             logging.debug("{} lines processed..".format(i))
@@ -161,11 +162,13 @@ def count_biotype_overlaps(aligned_bam, selected_features, biotype_count_dict, n
                 else:
                     iset.intersection_update( step_set )
             
+            # Feature values were set as biotype label. Overlap with multiple
+            # features with the same biotype will give length == 1
             key = 'multiple_features'
             if len(iset) == 1:
                 key = list(iset)[0]
             elif len(iset) == 0:
-                key = 'no_overlap'
+                key = 'no_overlap'                    
                     
             biotype_count_dict['biotype_counts'][key] += 1
             biotype_count_dict['biotype_lengths'][key][alnmt.iv.length] += 1
