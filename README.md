@@ -4,11 +4,13 @@ Visualizations
 A collection of next-gen sequencing visualisation scripts.
 
 * [Count Biotypes](#count-biotypes)
-	* Uses HTSeq to plot read overlaps with differetn feature biotype flags
-* [Bismark Coverage Curves](#bismark-coverage-curves)
-	* Plots the proportion of cytosines meeting increasing coverage thresholds
-* [Bismark Window Sizes](#bismark-window-sizes)
-	* Plots the proportion of windows passing observation thresholds with increasing window sizes
+	* Uses HTSeq to plot read overlaps with different feature biotype flags
+* Bismark Addons
+	* [Bismark Coverage Curves](#bismark-coverage-curves) - Plots the proportion of cytosines meeting increasing coverage thresholds
+	* [Bismark Window Sizes](#bismark-window-sizes) - Plots the proportion of windows passing observation thresholds with increasing window sizes
+* [Alignment Summaries](#alignment-reports)
+	* Two scripts to parse log files containing alignment stats from bowtie,
+		bowtie 2 or tophat and generate overview HTML reports
 
 ## Count Biotypes
 
@@ -221,3 +223,59 @@ To plot the graphs, you'll also need the following modules:
 
 * [GD::Graph](http://search.cpan.org/dist/GDGraph/Graph.pm) (linespoints and colour)
 * [GD::Image](http://search.cpan.org/dist/GD/GD.pm)
+
+
+
+
+---------------------------------------------------------------------------
+
+
+## Alignment Reports
+
+[Bowtie](http://bowtie-bio.sourceforge.net/index.shtml), 
+[Bowtie 2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml) and
+[Tophat](http://ccb.jhu.edu/software/tophat/index.shtml) are
+commonly used next-gen sequencing read aligners.
+
+It is quite usual to align many different input files in a batch. These
+aligners generate statistics about how successful each alignment
+is but these are usually held in text format, buried within a log file.
+As such, failed alignments can be easy to miss and it is difficult to get
+a quick overview as to the success of the batch.
+
+These two Perl scripts simply search through a collection of log files
+(one per alignment) and generate overview reports, showing a plot of
+how many reads were aligned, how many were discarded due to multiple
+mapping (if applicable) and how many failed to align. This plot can
+be switched to display percentages instead of read counts.
+
+The reports are generated in HTML with all assets embedded. As such they
+can be shared as single files and viewed in any web browser.
+
+
+### Usage
+
+	bowtie_report.pl <*.log>
+	tophat_report.pl <*.log>
+
+
+### Example Output
+
+![Bowtie Alignments](https://raw.githubusercontent.com/ewels/visualizations/master/examples/bowtie_align_screenshot.png)
+
+See the example report here: [bowtie_report.html](https://rawgit.com/ewels/visualizations/master/examples/bowtie_report.html)
+
+### Parameters
+
+None. These scripts are quite basic. They generate a file in the current directory called `bowtie_report.html` or `tophat_report.html`, overwriting
+any that exist with the same name.
+
+**Note**: Each input log file must contain alignment stats for only one alignment.
+
+### Dependencies
+
+These scripts are written in Perl and run on the command line. They do not use
+any additional Perl modules. The generated reports use
+[jQuery](http://jquery.com/) (embedded) and
+[HighCharts](http://www.highcharts.com/)
+(embedded) to render the plots.
