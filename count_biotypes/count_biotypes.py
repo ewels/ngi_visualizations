@@ -265,9 +265,10 @@ def plot_bars(biotype_count_dict, output_basename, title="Annotation Biotype Ali
     """
     
     # SET UP VARIABLES
-    biotype_counts = biotype_count_dict['biotype_counts']
+    biotype_counts = biotype_count_dict['biotype_counts'].copy()
     bar_width = 0.8
     total_reads = 0
+    feature_reads = 0
     plt_labels = []
     plt_values = []
     for biotype in sorted(biotype_counts, key=biotype_counts.get):
@@ -276,10 +277,21 @@ def plot_bars(biotype_count_dict, output_basename, title="Annotation Biotype Ali
         total_reads += biotype_counts[biotype]
         if biotype == 'no_overlap':
             continue
+        feature_reads += biotype_counts[biotype]
         plt_labels.append(biotype)
         plt_values.append(biotype_counts[biotype])
-        
+    
     ypos = numpy.arange(1, len(plt_labels)+1)
+    
+    # CUT OFF TINY BIOTYPES
+    # Group any biotype with less than 1% reads into 'other'
+    first_percentile = (feature_reads + 0.0)/100.0  
+    for bt, count in biotype_counts.items():
+        if bt == 'other':
+            continue
+        if (biotype_counts[bt] + 0.0) < first_percentile:
+            biotype_counts['other'] += count
+            biotype_counts.pop(bt, None)
     
     minx = 0
     if logx:
@@ -298,6 +310,9 @@ def plot_bars(biotype_count_dict, output_basename, title="Annotation Biotype Ali
     # MAKE SPECIAL CASES GREY
     if 'multiple_features' in plt_labels:
         case_index = plt_labels.index('multiple_features')
+        barlist[case_index].set_color('#999999')
+    if 'other' in plt_labels:
+        case_index = plt_labels.index('other')
         barlist[case_index].set_color('#999999')
     
     # Y AXIS
@@ -374,7 +389,7 @@ def plot_epic_histogram(biotype_count_dict, output_basename, title="Annotation B
     Returns filenames of PNG and PDF graphs
     """
     
-    biotype_lengths = biotype_count_dict['biotype_lengths']
+    biotype_lengths = biotype_count_dict['biotype_lengths'].copy()
     
     # FIND MAX AND MIN LENGTHS, SET UP READ LENGTHS ARRAY
     min_length = 9999
