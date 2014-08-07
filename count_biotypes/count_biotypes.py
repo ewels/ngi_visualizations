@@ -13,8 +13,10 @@ import argparse
 from collections import defaultdict
 import HTSeq
 import logging
+import fnmatch
 import numpy
 import os
+import re
 
 # Import matplot lib but avoid default X environment
 import matplotlib
@@ -75,6 +77,30 @@ def parse_gtf_biotypes(annotation_file, biotype_label='gene_type', count_feature
     # Set up filenames & objects
     annotation_file = os.path.realpath(annotation_file)
     gtffile = HTSeq.GFF_Reader( annotation_file )
+    
+    # Look for a translations file and load it if found
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    t_file = os.path.join(script_dir, 'bt_translations.txt')
+    translation_regexes = []
+    translations = {}
+    if os.path.isfile(t_file):
+        try:
+            with open(t_file, 'r') as fh:
+                for line in fh:
+                    line = line.lstrip().rstrip()
+                    if line and line[0] != '#':
+                        try:
+                            (find_str, replace) = re.split('\t+', line, 1)
+                            # Cheeky way to allow * wildcards
+                            find = re.compile(fnmatch.translate(find_str))
+                            translations[replace] = find
+                        except ValueError as e:
+                            logging.warning("\nWarning - did not understand translation (is it tab delimted?): {}\n{}\n".format(line, ValueError(e)))
+                            continue
+        except IOError as e:
+            logging.error("Error loading translations file: {}".format(t_file))
+            raise IOError(e)
+        logging.info("Found translation config file with {} translations.".format(len(translations)))
             
     # Go through annotation
     # Help from http://www-huber.embl.de/users/anders/HTSeq/doc/tour.html#tour
@@ -112,6 +138,10 @@ def parse_gtf_biotypes(annotation_file, biotype_label='gene_type', count_feature
             # Initiate count object and add feature to selected_features set  
             if biotype_label in feature.attr:
                 used_features += 1
+                # look for any matching translations
+                # TODO - this feels slow..? Should test it to see how slow.
+                for (replace, find) in translations.iteritems():
+                    feature.attr[biotype_label] = find.sub(replace, feature.attr[biotype_label])
                 selected_features[ feature.iv ] += feature.attr[biotype_label]
                 biotype_counts[ feature.attr[biotype_label] ] = 0
                 biotype_lengths[ feature.attr[biotype_label] ] = defaultdict(int)

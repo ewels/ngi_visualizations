@@ -1,0 +1,13 @@
+# Count Biotypes - Biotype Translations
+# --------------------------------------------------
+# Tab delimted two-column text file with original biotype labels
+# and their replacements. Multiple biotypes can be given a single
+# translation to group them under one name. Asterisks (*) can be
+# used as greedy wildcards. Translations are processed in order,
+# those at the top will have precedence.
+
+*_pseudogene	pseudogene
+IG_*	immune_gene
+TR_*	immune_gene
+
+
