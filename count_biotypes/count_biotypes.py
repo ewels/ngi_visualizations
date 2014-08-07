@@ -271,6 +271,19 @@ def plot_bars(biotype_count_dict, output_basename, title="Annotation Biotype Ali
     feature_reads = 0
     plt_labels = []
     plt_values = []
+    
+    # CUT OFF TINY BIOTYPES
+    # Group any biotype with less than 1% reads into 'other'
+    cutoff = (sum(biotype_counts.values()) + 0.0)/5000.0
+    logging.debug("{} feature reads - grouping any biotypes with < {} into 'other'\n".format(sum(biotype_counts.values()), cutoff))
+    for bt, count in biotype_counts.items():
+        if bt == 'other':
+            continue
+        if (biotype_counts[bt] + 0.0) < cutoff:
+            biotype_counts['other'] += count
+            biotype_counts.pop(bt, None)
+    
+    # COLLECT LABELS AND VARS
     for biotype in sorted(biotype_counts, key=biotype_counts.get):
         if biotype_counts[biotype] == 0:
             continue
@@ -282,16 +295,6 @@ def plot_bars(biotype_count_dict, output_basename, title="Annotation Biotype Ali
         plt_values.append(biotype_counts[biotype])
     
     ypos = numpy.arange(1, len(plt_labels)+1)
-    
-    # CUT OFF TINY BIOTYPES
-    # Group any biotype with less than 1% reads into 'other'
-    first_percentile = (feature_reads + 0.0)/100.0  
-    for bt, count in biotype_counts.items():
-        if bt == 'other':
-            continue
-        if (biotype_counts[bt] + 0.0) < first_percentile:
-            biotype_counts['other'] += count
-            biotype_counts.pop(bt, None)
     
     minx = 0
     if logx:
@@ -424,6 +427,8 @@ def plot_epic_histogram(biotype_count_dict, output_basename, title="Annotation B
     
     # CUT OFF TINY BIOTYPES
     # Group any biotype with less than 1% reads into 'other'
+    logging.debug("{} feature reads - grouping any biotypes with < {} into 'other'\n"
+                        .format(feature_reads, first_percentile))
     for bt, val in biotype_lengths.items():
         if bt == 'other':
             continue
@@ -459,7 +464,6 @@ def plot_epic_histogram(biotype_count_dict, output_basename, title="Annotation B
         if bt_count == 0:
             continue
         bars[bt_count] = (bt, values)
-        
     
     # PLOT BARS
     pt = {}
@@ -467,7 +471,21 @@ def plot_epic_histogram(biotype_count_dict, output_basename, title="Annotation B
     last_values = [0]*(max_length - min_length)
     legend_labels = []
     cols = distinguishable_colours(len(bars), use_equidistant_cols)
+    
+    # Sort the counts and bars into two lists
+    sorted_bars = []
+    special_bars = []
     for (count, bar) in sorted(bars.items(), reverse=True):
+        (bt, values) = bar
+        if bt == 'multiple_features' or bt == 'other':
+            special_bars.append(bar)
+        else:
+            sorted_bars.append(bar)
+    # add special cases onto the back
+    sorted_bars.extend(special_bars)
+
+    # Now go through and plot them
+    for idx, bar in enumerate(sorted_bars):
         (bt, values) = bar
         if(percentage):
             for (key,var) in enumerate(values):
@@ -476,11 +494,16 @@ def plot_epic_histogram(biotype_count_dict, output_basename, title="Annotation B
                     values[key] = 0
                 else:
                     values[key] = ((var+0.0)/(bp_counts[key+min_length]+0.0))*100
-        pt[bt] = axes.bar(x_ind, values, width=bar_width, bottom=last_values, align='center', color=cols[i], linewidth=0)
+        # make special cases grey
+        thiscol = cols[i]
+        if bt == 'multiple_features':
+            thiscol = '#CCCCCC'
+        if bt == 'other':
+            thiscol = '#999999'
+        pt[bt] = axes.bar(x_ind, values, width=bar_width, bottom=last_values, align='center', color=thiscol, linewidth=0)
         legend_labels.append(bt)
         last_values = [last_values+values for last_values,values in zip(last_values, values)]
         i += 1
-    
     
     # TIDY UP AXES
     if percentage:
