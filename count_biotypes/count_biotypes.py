@@ -84,7 +84,7 @@ def parse_gtf_biotypes(annotation_file, biotype_label='gene_type', count_feature
         try:
             with open(t_file, 'r') as fh:
                 for line in fh:
-                    line = line.lstrip().rstrip()
+                    line = line.strip()
                     if line and line[0] != '#':
                         try:
                             (find_str, replace) = re.split('\t+', line, 1)
