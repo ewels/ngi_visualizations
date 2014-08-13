@@ -13,15 +13,17 @@ import argparse
 from collections import defaultdict
 import HTSeq
 import logging
+import fnmatch
 import numpy
 import os
+import re
 
 # Import matplot lib but avoid default X environment
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-def count_biotypes(annotation_file, input_bam_list, biotype_flag='gene_type', feature_type='exon', num_lines=10000000, equidistant_cols=False):
+def count_biotypes(annotation_file, input_bam_list, biotype_flag='gene_type', feature_type='exon', num_lines=10000000, no_overlap=False, equidistant_cols=False):
     """
     Count the biotypes
     """
@@ -51,13 +53,13 @@ def count_biotypes(annotation_file, input_bam_list, biotype_flag='gene_type', fe
         # Plot bar graph
         plot_basename = os.path.splitext(os.path.basename(fname))[0]
         plot_title = "{} Biotype Alignments".format(feature_type.title())
-        bargraph_fns = plot_bars(biotype_count_dict['biotype_counts'], plot_basename, plot_title, True)
-        log_bargraph_fns = plot_bars(biotype_count_dict['biotype_counts'], plot_basename, plot_title, False)
+        bargraph_fns = plot_bars(biotype_count_dict, plot_basename, plot_title, True, no_overlap)
+        log_bargraph_fns = plot_bars(biotype_count_dict, plot_basename, plot_title, False, no_overlap)
         
         # Plot epic histogram
         plot_title = "Read Lengths Overlapping {}s".format(feature_type.title())
-        hist_fns = plot_epic_histogram (biotype_count_dict['biotype_lengths'], plot_basename, plot_title, False, equidistant_cols)
-        percent_hist_fns = plot_epic_histogram (biotype_count_dict['biotype_lengths'], plot_basename, plot_title, True, equidistant_cols)
+        hist_fns = plot_epic_histogram (biotype_count_dict, plot_basename, plot_title, False, no_overlap, equidistant_cols)
+        percent_hist_fns = plot_epic_histogram (biotype_count_dict, plot_basename, plot_title, True, no_overlap, equidistant_cols)
 
 
 
@@ -72,6 +74,30 @@ def parse_gtf_biotypes(annotation_file, biotype_label='gene_type', count_feature
     # Set up filenames & objects
     annotation_file = os.path.realpath(annotation_file)
     gtffile = HTSeq.GFF_Reader( annotation_file )
+    
+    # Look for a translations file and load it if found
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    t_file = os.path.join(script_dir, 'bt_translations.txt')
+    translation_regexes = []
+    translations = {}
+    if os.path.isfile(t_file):
+        try:
+            with open(t_file, 'r') as fh:
+                for line in fh:
+                    line = line.strip()
+                    if line and line[0] != '#':
+                        try:
+                            (find_str, replace) = re.split('\t+', line, 1)
+                            # Cheeky way to allow * wildcards
+                            find = re.compile(fnmatch.translate(find_str))
+                            translations[replace] = find
+                        except ValueError as e:
+                            logging.warning("\nWarning - did not understand translation (is it tab delimted?): {}\n{}\n".format(line, ValueError(e)))
+                            continue
+        except IOError as e:
+            logging.error("Error loading translations file: {}".format(t_file))
+            raise IOError(e)
+        logging.info("Found translation config file with {} translations.".format(len(translations)))
             
     # Go through annotation
     # Help from http://www-huber.embl.de/users/anders/HTSeq/doc/tour.html#tour
@@ -83,11 +109,15 @@ def parse_gtf_biotypes(annotation_file, biotype_label='gene_type', count_feature
     biotype_lengths = {}
     biotype_counts['no_overlap'] = 0
     biotype_counts['multiple_features'] = 0
+    biotype_counts['other'] = 0
     biotype_lengths['no_overlap'] = defaultdict(int)
     biotype_lengths['multiple_features'] = defaultdict(int)
-    feature_type_counts = defaultdict(int)
+    biotype_lengths['other'] = defaultdict(int)
     feature_type_biotype_counts = defaultdict(lambda: defaultdict(int))
+    feature_type_biotype_labelled = defaultdict(int)
+    feature_type_biotype_unlabelled = defaultdict(int)
     
+    # Go through annotation file and scoop up what we need
     for i, feature in enumerate(gtffile):
         if i % 100000 == 0 and i > 0:
             logging.debug("{} lines processed..".format(i))
@@ -104,6 +134,10 @@ def parse_gtf_biotypes(annotation_file, biotype_label='gene_type', count_feature
             # Initiate count object and add feature to selected_features set  
             if biotype_label in feature.attr:
                 used_features += 1
+                # look for any matching translations
+                # TODO - this feels slow..? Should test it to see how slow.
+                for (replace, find) in translations.iteritems():
+                    feature.attr[biotype_label] = find.sub(replace, feature.attr[biotype_label])
                 selected_features[ feature.iv ] += feature.attr[biotype_label]
                 biotype_counts[ feature.attr[biotype_label] ] = 0
                 biotype_lengths[ feature.attr[biotype_label] ] = defaultdict(int)
@@ -111,26 +145,28 @@ def parse_gtf_biotypes(annotation_file, biotype_label='gene_type', count_feature
                 ignored_features += 1
                 
         # Collect general annotation stats
-        feature_type_counts[feature.type] += 1
         if biotype_label in feature.attr:
-            feature_type_biotype_counts[feature.type][feature.attr[biotype_label]] += 1
+            feature_type_biotype_counts[feature.type][feature.attr[biotype_label]] = 1
+            feature_type_biotype_labelled[feature.type] += 1
+        else:
+            feature_type_biotype_unlabelled[feature.type] += 1     
     
+    # Print the log information about what's in the GTF file
     logging.info("\n\n{} features with biotype: {}".format(count_feature_type, used_features))
     logging.info("{} features without biotype: {}".format(count_feature_type, ignored_features))
     logging.info("{} biotypes to be counted: {}".format(count_feature_type, ', '.join(biotype_counts.keys())))
     
     logging.info("\nBiotype stats found for all feature types (using attribute '{}'):".format(biotype_label))
-    for ft in sorted(feature_type_biotype_counts.keys()):
+    for ft in feature_type_biotype_counts.keys():
         num_ft_bts = len(feature_type_biotype_counts[ft].keys())
-        num_features = 0
-        for c,d in feature_type_biotype_counts[ft].iteritems():
-            num_features += d
-        logging.info("    {:20}\t{:4} biotypes\t{:8} labelled features".format(ft, num_ft_bts, num_features))
+        logging.info(" {:15}\t{:4} biotypes\t{:8} labelled features\t{:3} unlabelled features" \
+            .format(ft, num_ft_bts, feature_type_biotype_labelled[ft], feature_type_biotype_unlabelled[ft]))
     
     if(used_features == 0):
         raise ValueError('No features have biotypes!')
     
-    return {'selected_features': selected_features, 'biotype_count_dict': {'biotype_counts': biotype_counts, 'biotype_lengths':biotype_lengths}}
+    return {'selected_features': selected_features, # 'introns': introns, 'promoters': promoters, 
+            'biotype_count_dict': {'biotype_counts': biotype_counts, 'biotype_lengths':biotype_lengths}}
 
 
 def count_biotype_overlaps(aligned_bam, selected_features, biotype_count_dict, number_lines=10000000):
@@ -202,7 +238,7 @@ def count_biotype_overlaps(aligned_bam, selected_features, biotype_count_dict, n
 
 
 
-def plot_bars(biotype_counts, output_basename, title="Annotation Biotype Alignments", logx=True):
+def plot_bars(biotype_count_dict, output_basename, title="Annotation Biotype Alignments", logx=True, no_overlap=False):
     """
     Plots bar graph of alignment biotypes using matplotlib pyplot
     Input: dict of biotype labels and associated counts
@@ -213,19 +249,35 @@ def plot_bars(biotype_counts, output_basename, title="Annotation Biotype Alignme
     """
     
     # SET UP VARIABLES
+    biotype_counts = biotype_count_dict['biotype_counts'].copy()
     bar_width = 0.8
     total_reads = 0
+    feature_reads = 0
     plt_labels = []
     plt_values = []
+    
+    # CUT OFF TINY BIOTYPES
+    # Group any biotype with less than 1% reads into 'other'
+    cutoff = (sum(biotype_counts.values()) + 0.0)/5000.0
+    logging.debug("{} feature reads - grouping any biotypes with < {} into 'other'\n".format(sum(biotype_counts.values()), cutoff))
+    for bt, count in biotype_counts.items():
+        if bt == 'other':
+            continue
+        if (biotype_counts[bt] + 0.0) < cutoff:
+            biotype_counts['other'] += count
+            biotype_counts.pop(bt, None)
+    
+    # COLLECT LABELS AND VARS
     for biotype in sorted(biotype_counts, key=biotype_counts.get):
         if biotype_counts[biotype] == 0:
             continue
         total_reads += biotype_counts[biotype]
-        if biotype == 'no_overlap':
+        if biotype == 'no_overlap' and no_overlap is False:
             continue
+        feature_reads += biotype_counts[biotype]
         plt_labels.append(biotype)
         plt_values.append(biotype_counts[biotype])
-        
+    
     ypos = numpy.arange(1, len(plt_labels)+1)
     
     minx = 0
@@ -245,6 +297,12 @@ def plot_bars(biotype_counts, output_basename, title="Annotation Biotype Alignme
     # MAKE SPECIAL CASES GREY
     if 'multiple_features' in plt_labels:
         case_index = plt_labels.index('multiple_features')
+        barlist[case_index].set_color('#999999')
+    if 'other' in plt_labels:
+        case_index = plt_labels.index('other')
+        barlist[case_index].set_color('#999999')
+    if 'no_overlap' in plt_labels:
+        case_index = plt_labels.index('no_overlap')
         barlist[case_index].set_color('#999999')
     
     # Y AXIS
@@ -311,7 +369,7 @@ def plot_bars(biotype_counts, output_basename, title="Annotation Biotype Alignme
     return {'png': png_fn, 'pdf': pdf_fn}
 
 
-def plot_epic_histogram(biotype_lengths, output_basename, title="Annotation Biotype Lengths", percentage=False, use_equidistant_cols=False):
+def plot_epic_histogram(biotype_count_dict, output_basename, title="Annotation Biotype Lengths", percentage=False, no_overlap=False, use_equidistant_cols=False):
     """
     Plot awesome histogram of read lengths, with bars broken up by feature
     biotype overlap
@@ -320,7 +378,9 @@ def plot_epic_histogram(biotype_lengths, output_basename, title="Annotation Biot
     Input: output fn
     Returns filenames of PNG and PDF graphs
     """
-     
+    
+    biotype_lengths = biotype_count_dict['biotype_lengths'].copy()
+    
     # FIND MAX AND MIN LENGTHS, SET UP READ LENGTHS ARRAY
     min_length = 9999
     max_length = 0
@@ -350,7 +410,20 @@ def plot_epic_histogram(biotype_lengths, output_basename, title="Annotation Biot
             min_length = x
         if (cum_count + 0.0) > nninth_percentile:
             if max_length+0.0 > x+0.0:
-                max_length = x        
+                max_length = x
+    
+    # CUT OFF TINY BIOTYPES
+    # Group any biotype with less than 1% reads into 'other'
+    logging.debug("{} feature reads - grouping any biotypes with < {} into 'other'\n"
+                        .format(feature_reads, first_percentile))
+    for bt, val in biotype_lengths.items():
+        if bt == 'other':
+            continue
+        if (biotype_count_dict['biotype_counts'][bt] + 0.0) < first_percentile:
+            for rlength, rcount in biotype_lengths[bt].iteritems():
+                biotype_lengths['other'][rlength] += rcount
+                biotype_count_dict['biotype_counts']['other'] += rcount
+            biotype_lengths.pop(bt, None)
     
     # SET UP PLOT
     fig = plt.figure()
@@ -363,7 +436,7 @@ def plot_epic_histogram(biotype_lengths, output_basename, title="Annotation Biot
     bars = {}
     for bt in biotype_lengths:
         # Skip reads with no overlap
-        if bt == 'no_overlap':
+        if bt == 'no_overlap' and no_overlap is False:
             continue
         values = []
         bt_count = 0
@@ -385,7 +458,21 @@ def plot_epic_histogram(biotype_lengths, output_basename, title="Annotation Biot
     last_values = [0]*(max_length - min_length)
     legend_labels = []
     cols = distinguishable_colours(len(bars), use_equidistant_cols)
+    
+    # Sort the counts and bars into two lists
+    sorted_bars = []
+    special_bars = []
     for (count, bar) in sorted(bars.items(), reverse=True):
+        (bt, values) = bar
+        if bt == 'multiple_features' or bt == 'other':
+            special_bars.append(bar)
+        else:
+            sorted_bars.append(bar)
+    # add special cases onto the back
+    sorted_bars.extend(special_bars)
+
+    # Now go through and plot them
+    for idx, bar in enumerate(sorted_bars):
         (bt, values) = bar
         if(percentage):
             for (key,var) in enumerate(values):
@@ -394,7 +481,15 @@ def plot_epic_histogram(biotype_lengths, output_basename, title="Annotation Biot
                     values[key] = 0
                 else:
                     values[key] = ((var+0.0)/(bp_counts[key+min_length]+0.0))*100
-        pt[bt] = axes.bar(x_ind, values, width=bar_width, bottom=last_values, align='center', color=cols[i], linewidth=0)
+        # make special cases grey
+        thiscol = cols[i]
+        if bt == 'multiple_features':
+            thiscol = '#CCCCCC'
+        if bt == 'other':
+            thiscol = '#999999'
+        if bt == 'no_overlap':
+            thiscol = '#DEDEDE'
+        pt[bt] = axes.bar(x_ind, values, width=bar_width, bottom=last_values, align='center', color=thiscol, linewidth=0)
         legend_labels.append(bt)
         last_values = [last_values+values for last_values,values in zip(last_values, values)]
         i += 1
@@ -418,7 +513,7 @@ def plot_epic_histogram(biotype_lengths, output_basename, title="Annotation Biot
     plt.text(0.5, 1.15, output_basename, horizontalalignment='center',
                 fontsize=10, weight='light', transform = axes.transAxes)
     if 'no_overlap' in biotype_lengths:
-        no_overlap_string = "{} reads had no feature overlap ({:.1%} of all {} aligned reads)" \
+        no_overlap_string = "{} reads did not overlap the selected feature type ({:.1%} of all {} aligned reads)" \
                             .format(no_overlap_counts, ((no_overlap_counts + 0.0) / (total_reads + 0.0)) \
                             , total_reads)
         plt.text(0.5, -0.2, no_overlap_string, horizontalalignment='center',
@@ -522,6 +617,8 @@ if __name__ == "__main__":
                         help="GTF biotype flag (default = gene_type or *biotype*)")
     parser.add_argument("-n", "--num-lines", dest="num_lines", type=int, default=10000000,
                         help="Number of alignments to query")
+    parser.add_argument("-o", "--no-overlap", dest="no_overlap", action="store_true",
+                        help="Include reads that don't have any feature overlap")
     parser.add_argument("-c", "--cols", dest="equidistant_cols", action="store_true",
                         help="Plot graphs using equidistant colours to prevent duplicated label colours")
     parser.add_argument("-l", "--log", dest="log_level", default='info', choices=['debug', 'info', 'warning'],

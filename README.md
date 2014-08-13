@@ -57,6 +57,13 @@ fine-grained approach:
 (hist_png_fn, hist_pdf_fn) = plot_epic_histogram (lengths, fn_basename)
 ```
 
+#### Translations
+To customise the plots, it is possible to "translate" biotype labels. A file
+called `bt_translations.txt` comes with the script - each line can contain a
+search pattern and a replacement label (tab separated). Search wildcards can be
+included by using an asterisk (`*`). Multiple search strings can be given the
+same biotype label to manually group biotypes together.
+
 ### Example output
 The following plots were generated from a Total Small RNA run in Human cells,
 accession [SRR1304304](http://www.ncbi.nlm.nih.gov/sra/?term=SRR1304304).
@@ -78,7 +85,10 @@ Command Line Flag | `count_biotypes()` argument name | Description
 `--biotype-flag`, `-b` | `biotype_flag` | Default: `gene_type` (will also look for any flag containing `biotype`).<br>Name of annotation flag to collect biotype label from.
 `--genome-feature`, `-t` | `feature_type` | Default: `exon`.<br>Type of feature to inspect within GTF file.
 `--num-lines`, `-n` | `num_lines` | Default: 10 million.<br>Number of lines to read from aligned BAM file.
+`--no-overlap`, `-o` | `no_overlap` | Default: False.<br>Include features with no feature overlap in plots.
+`--cols`, `-c` | `equidistant_cols` | Default: False.<br>Plot graphs using equidistant colours to prevent duplicated label colours.
 `--log`, `-l` | `log_level` | Default: info.<br>Specify the level of logging: debug, info or warning.
+`--log-output`, `-u` | `log_output` | Default: stdout.<br>Log output filename.
 
 ### Dependencies
 
