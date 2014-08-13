@@ -40,9 +40,6 @@ def count_biotypes(annotation_file, input_bam_list, biotype_flag='gene_type', fe
     # Parse the GTF file
     biotype_annotation = parse_gtf_biotypes(annotation_file, biotype_flag, feature_type)
     
-    # Make feature type annotation (exons / introns / promoters / UTRs)
-    
-    
     # Process files
     for fname in input_bam_list:
         logging.info("Processing {}".format(fname))
@@ -106,7 +103,6 @@ def parse_gtf_biotypes(annotation_file, biotype_label='gene_type', count_feature
     # Help from http://www-huber.embl.de/users/anders/HTSeq/doc/tour.html#tour
     logging.info("\nParsing annotation file {}".format(annotation_file))
     selected_features = HTSeq.GenomicArrayOfSets( "auto", stranded=False )
-    # transcript_features = defaultdict(lambda: HTSeq.GenomicArray("auto"))
     ignored_features = 0
     used_features = 0
     biotype_counts = {}
@@ -147,55 +143,13 @@ def parse_gtf_biotypes(annotation_file, biotype_label='gene_type', count_feature
                 biotype_lengths[ feature.attr[biotype_label] ] = defaultdict(int)
             else:
                 ignored_features += 1
-            
-            # Add feature to transcript sets
-            # if 'transcript_id' in feature.attr:
-                # transcript_features[ feature.attr['transcript_id'] ][feature] = 1
                 
         # Collect general annotation stats
         if biotype_label in feature.attr:
             feature_type_biotype_counts[feature.type][feature.attr[biotype_label]] = 1
             feature_type_biotype_labelled[feature.type] += 1
         else:
-            feature_type_biotype_unlabelled[feature.type] += 1
-    
-    # Go through our selected features (exons, hopefully) and create introns
-    # introns = HTSeq.GenomicArrayOfSets( "auto", stranded=False )
-    # promoters = HTSeq.GenomicArrayOfSets( "auto", stranded=False )
-    # if count_feature_type == "exon":
-    #     for transcript in transcript_features:
-    #         promoter = None
-    #         f_chrom = None
-    #         f_start = None
-    #         f_end = None
-    #         f_strand = None
-    #         f_biotype = None
-    #         for f, step_set in transcript_features[transcript].steps():
-    #             # Create the promoter feature
-    #             if f.strand == "+":
-    #                 if (promoter is None) or (f.start < promoter.start) :
-    #                     promoter = HTSeq.GenomicInterval( f.chrom, f.start - 1500, f.start + 500, "+")
-    #             else:
-    #                 if (promoter  is None) or (f.end > promoter.end) :
-    #                     promoter = HTSeq.GenomicInterval( f.chrom, f.end + 1501, f.end - 499, "-")
-    #             # Find start and end of transcript for introns
-    #             f_chrom = f.chrom
-    #             f_start = min(start, f.start)
-    #             f_end = max(end, f.end)
-    #             f_strand = f.strand
-    #             # Get the biotype
-    #             if biotype_label in f.attr and f_biotype is None:
-    #                 f_biotype = f.attr[biotype_label]
-    #         # Add the promoter
-    #         promoters[promoter] = 1
-    #         # Make set of introns
-    #         transcript_iv = HTSeq.GenomicInterval(f_chrom, f_start, f_end, f_strand)
-    #         for iv, val in transcript[transcript_iv].steps():
-    #             if val != 1:
-    #                 introns[iv] = 1
-    # else:
-    #     logging.warn("\nFeature type is not exon - will not generate introns and promoters\n");
-            
+            feature_type_biotype_unlabelled[feature.type] += 1     
     
     # Print the log information about what's in the GTF file
     logging.info("\n\n{} features with biotype: {}".format(count_feature_type, used_features))
