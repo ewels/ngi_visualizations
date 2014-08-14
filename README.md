@@ -143,7 +143,7 @@ it runs.
 
 Command Line Flag | Description
 ----------------- | -----------
-`--regions <regions.bed>` | Required.<br>Supply a BED file with regions of interest. The script will show coverage inside and outside these regions
+`--regions <regions.bed>` | Default: None<br>Supply a BED file with regions of interest. The script will show coverage inside and outside these regions
 `--stranded` | Default: No.<br>Split the report up into forward and reverse strands
 `--min_cov` and `--max_cov` | Defaults: `0x, 100x`.<br>The minimum and maximum coverage limits to consider / plot
 `--binsize` | Default: `1`.<br>The coverage bin size to use - what size steps to use between `--min_cov` and `--max_cov`
@@ -211,7 +211,7 @@ it runs.
 
 Command Line Flag | Description
 ----------------- | -----------
-`--regions <regions.bed>` | Required.<br>Supply a BED file with regions of interest. Only reads and windows overlapping these regions will be considered.
+`--regions <regions.bed>` | Default: None<br>Supply a BED file with regions of interest. Only reads and windows overlapping these regions will be considered.
 `--stranded <for / rev>` | Default: both.<br>Consider reads on only one reference strand
 `--coverage` | Default: `10x`.<br>Minumum number of observations required to count a Cytosine
 `--min_counts <comma separated integers>` | Default: `1,2,3,4,5,10`.<br>List of count thresholds to use - how many different cytosines must be seen within a window for it to pass
