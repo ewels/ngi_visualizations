@@ -82,6 +82,10 @@ Command Line Flag | `count_biotypes()` argument name | Description
 ----------------- | -------------------- | -----------
 `--genome-feature-file`, `-g` | `annotation_file` | Required.<br>Path to annotation file.
 `<input_bam_list>` | `input_bam_list` | Required.<br>List of paths to aligned BAM files.
+`-g`, `--gene-feature` | `gene_feature` | Default: `gene`.<br>Feature type for genes.
+`-t`, `--transcript-feature` | `transcript_feature` | Default: `exon`.<br>Feature type for transcribed regions (for which biotypes will be counted).
+`-r`, `--rrna-biotype` | `rrna_biotype` | Default: `rRNA`.<br>Biotype label which identifies ribosomal RNA.
+`-m`, `--mt-chr` | `mt_chr` | Default: `MT`.<br>Label for mitochondrial chromosome. `chr` will be automatically stripped. Case insensitive.
 `--biotype-flag`, `-b` | `biotype_flag` | Default: `gene_type` (will also look for any flag containing `biotype`).<br>Name of annotation flag to collect biotype label from.
 `--genome-feature`, `-t` | `feature_type` | Default: `exon`.<br>Type of feature to inspect within GTF file.
 `--num-lines`, `-n` | `num_lines` | Default: 10 million.<br>Number of lines to read from aligned BAM file.

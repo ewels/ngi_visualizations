@@ -23,7 +23,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-def count_biotypes(annotation_file, input_bam_list, biotype_flag='gene_type', feature_type='exon', num_lines=10000000, no_overlap=False, equidistant_cols=False):
+def count_biotypes(annotation_file, input_bam_list, biotype_flag='gene_type', gene_feature_type='gene', transcript_feature_type='exon', rrna_biotype='rRNA', mt_chr='MT', num_lines=10000000, no_overlap=False, equidistant_cols=False):
     """
     Count the biotypes
     """
@@ -38,7 +38,7 @@ def count_biotypes(annotation_file, input_bam_list, biotype_flag='gene_type', fe
             raise IOError("Fatal error - can't find input file {}".format(fname))
     
     # Parse the GTF file
-    biotype_annotation = parse_gtf_biotypes(annotation_file, biotype_flag, feature_type)
+    biotype_annotation = parse_gtf_biotypes(annotation_file, biotype_flag, gene_feature_type, transcript_feature_type)
     
     # Process files
     for fname in input_bam_list:
@@ -48,22 +48,26 @@ def count_biotypes(annotation_file, input_bam_list, biotype_flag='gene_type', fe
         biotype_count_dict = biotype_annotation['biotype_count_dict'].copy()
         
         # Generate counts
-        biotype_count_dict = count_biotype_overlaps(fname, biotype_annotation['selected_features'], biotype_count_dict, num_lines)
+        (biotype_count_dict, read_counts) = count_read_overlaps(fname, biotype_annotation['gene_features'], biotype_annotation['selected_features'], rrna_biotype, mt_chr, biotype_count_dict, num_lines)
         
         # Plot bar graph
         plot_basename = os.path.splitext(os.path.basename(fname))[0]
-        plot_title = "{} Biotype Alignments".format(feature_type.title())
+        plot_title = "{} Biotype Alignments".format(transcript_feature_type.title())
         bargraph_fns = plot_bars(biotype_count_dict, plot_basename, plot_title, True, no_overlap)
         log_bargraph_fns = plot_bars(biotype_count_dict, plot_basename, plot_title, False, no_overlap)
         
         # Plot epic histogram
-        plot_title = "Read Lengths Overlapping {}s".format(feature_type.title())
+        plot_title = "Read Lengths Overlapping {}s".format(transcript_feature_type.title())
         hist_fns = plot_epic_histogram (biotype_count_dict, plot_basename, plot_title, False, no_overlap, equidistant_cols)
         percent_hist_fns = plot_epic_histogram (biotype_count_dict, plot_basename, plot_title, True, no_overlap, equidistant_cols)
+        
+        # Plot feature type graph
+        plot_title = "Feature Type Overlaps"
+        bargraph_fn = plot_ft_bars(read_counts, plot_basename, plot_title)
 
 
 
-def parse_gtf_biotypes(annotation_file, biotype_label='gene_type', count_feature_type='exon'):
+def parse_gtf_biotypes(annotation_file, biotype_label='gene_type', gene_feature_type='gene', count_feature_type='exon'):
     """
     Custom function that uses HTSeq core to analyse overlaps
     with annotation features of different biotypes.
@@ -102,15 +106,17 @@ def parse_gtf_biotypes(annotation_file, biotype_label='gene_type', count_feature
     # Go through annotation
     # Help from http://www-huber.embl.de/users/anders/HTSeq/doc/tour.html#tour
     logging.info("\nParsing annotation file {}".format(annotation_file))
+    gene_features = HTSeq.GenomicArrayOfSets( "auto", stranded=False )
     selected_features = HTSeq.GenomicArrayOfSets( "auto", stranded=False )
-    ignored_features = 0
-    used_features = 0
     biotype_counts = {}
     biotype_lengths = {}
+    no_biotype_count = 0
     biotype_counts['no_overlap'] = 0
+    biotype_counts['no_biotype'] = 0
     biotype_counts['multiple_features'] = 0
     biotype_counts['other'] = 0
     biotype_lengths['no_overlap'] = defaultdict(int)
+    biotype_lengths['no_biotype'] = defaultdict(int)
     biotype_lengths['multiple_features'] = defaultdict(int)
     biotype_lengths['other'] = defaultdict(int)
     feature_type_biotype_counts = defaultdict(lambda: defaultdict(int))
@@ -119,8 +125,14 @@ def parse_gtf_biotypes(annotation_file, biotype_label='gene_type', count_feature
     
     # Go through annotation file and scoop up what we need
     for i, feature in enumerate(gtffile):
+        # status logging
         if i % 100000 == 0 and i > 0:
             logging.debug("{} lines processed..".format(i))
+        
+        # Collect gene features
+        if feature.type == gene_feature_type:
+            gene_features[ feature.iv ] += 'gene'
+        
         # Collect features and initialise biotype count objects
         if feature.type == count_feature_type:
             # See if we have another annotation that sounds like biotype
@@ -131,19 +143,22 @@ def parse_gtf_biotypes(annotation_file, biotype_label='gene_type', count_feature
                         logging.warning("\nChanging biotype label from {} to {}".format(biotype_label, attr))
                         biotype_label = attr
             
-            # Initiate count object and add feature to selected_features set  
-            if biotype_label in feature.attr:
-                used_features += 1
-                # look for any matching translations
+            # Check that we have a biotype
+            if biotype_label not in feature.attr:
+                selected_features[ feature.iv ] += 'no_biotype'
+                no_biotype_count += 1
+            else:
+                # Look for any matching translations
                 # TODO - this feels slow..? Should test it to see how slow.
                 for (replace, find) in translations.iteritems():
                     feature.attr[biotype_label] = find.sub(replace, feature.attr[biotype_label])
+            
+                # Initiate count object and add feature to selected_features set 
                 selected_features[ feature.iv ] += feature.attr[biotype_label]
                 biotype_counts[ feature.attr[biotype_label] ] = 0
                 biotype_lengths[ feature.attr[biotype_label] ] = defaultdict(int)
-            else:
-                ignored_features += 1
-                
+        
+        
         # Collect general annotation stats
         if biotype_label in feature.attr:
             feature_type_biotype_counts[feature.type][feature.attr[biotype_label]] = 1
@@ -152,8 +167,7 @@ def parse_gtf_biotypes(annotation_file, biotype_label='gene_type', count_feature
             feature_type_biotype_unlabelled[feature.type] += 1     
     
     # Print the log information about what's in the GTF file
-    logging.info("\n\n{} features with biotype: {}".format(count_feature_type, used_features))
-    logging.info("{} features without biotype: {}".format(count_feature_type, ignored_features))
+    logging.info("{} features with no biotype: {}".format(count_feature_type, no_biotype_count))
     logging.info("{} biotypes to be counted: {}".format(count_feature_type, ', '.join(biotype_counts.keys())))
     
     logging.info("\nBiotype stats found for all feature types (using attribute '{}'):".format(biotype_label))
@@ -162,14 +176,14 @@ def parse_gtf_biotypes(annotation_file, biotype_label='gene_type', count_feature
         logging.info(" {:15}\t{:4} biotypes\t{:8} labelled features\t{:3} unlabelled features" \
             .format(ft, num_ft_bts, feature_type_biotype_labelled[ft], feature_type_biotype_unlabelled[ft]))
     
-    if(used_features == 0):
+    if(join(biotype_counts.keys()) == 0):
         raise ValueError('No features have biotypes!')
     
-    return {'selected_features': selected_features, # 'introns': introns, 'promoters': promoters, 
+    return {'selected_features': selected_features, 'gene_features': gene_features, 
             'biotype_count_dict': {'biotype_counts': biotype_counts, 'biotype_lengths':biotype_lengths}}
 
 
-def count_biotype_overlaps(aligned_bam, selected_features, biotype_count_dict, number_lines=10000000):
+def count_read_overlaps(aligned_bam, gene_features, selected_features, rrna_biotype, mt_chr, biotype_count_dict, number_lines=10000000):
     """
     Go thorough an aligned bam, counting overlaps with biotype features
     """
@@ -180,7 +194,13 @@ def count_biotype_overlaps(aligned_bam, selected_features, biotype_count_dict, n
     
     # Go through alignments, counting transcript biotypes
     logging.info("\nReading BAM file (will stop at {}): ".format(number_lines))
-    aligned_reads = 0
+    read_counts = {
+        'aligned_reads': 0,
+        'gene_overlap': 0,
+        'transcript_overlap': 0,
+        'rRNA_overlap': 0,
+        'MT_overlap': 0
+    }
     for i, alnmt in enumerate(bamfile):
         if i > int(number_lines):
             i -= 1
@@ -190,9 +210,25 @@ def count_biotype_overlaps(aligned_bam, selected_features, biotype_count_dict, n
             logging.debug("{} lines processed..".format(i))
         
         if alnmt.aligned:
-            aligned_reads += 1
+            read_counts['aligned_reads'] += 1
+            
+            # Count gene overlaps
+            giset = None
+            for iv2, g_step_set in gene_features[ alnmt.iv ].steps():
+                if giset is None:
+                    giset = g_step_set.copy()
+                else:
+                    giset.intersection_update( g_step_set )
+            if len(giset) > 0:
+                read_counts['gene_overlap'] += 1
+            
+            # Count mitochondrial reads
+            if alnmt.iv.chrom == mt_chr:
+                read_counts['MT_overlap'] += 1
+            
+            # Process transcript overlaps
             iset = None
-            for iv2, step_set in selected_features[ alnmt.iv ].steps():
+            for iv3, step_set in selected_features[ alnmt.iv ].steps():
                 if iset is None:
                     iset = step_set.copy()
                 else:
@@ -200,23 +236,38 @@ def count_biotype_overlaps(aligned_bam, selected_features, biotype_count_dict, n
             
             # Feature values were set as biotype label. Overlap with multiple
             # features with the same biotype will give length == 1
-            key = 'multiple_features'
+            key = 'error'
             if len(iset) == 1:
                 key = list(iset)[0]
+                read_counts['transcript_overlap'] += 1
             elif len(iset) == 0:
-                key = 'no_overlap'                    
+                key = 'no_overlap'
+            elif len(iset) > 0:
+                key = 'multiple_features'
+                read_counts['transcript_overlap'] += 1
+            
+            # Count rRNA overlaps, even if it maps with other biotypes
+            if any(rrna_biotype in b for b in list(iset)):
+                read_counts['rRNA_overlap'] += 1            
                     
             biotype_count_dict['biotype_counts'][key] += 1
             biotype_count_dict['biotype_lengths'][key][alnmt.iv.length] += 1
     
     logging.info ("\n{} overlaps found from {} aligned reads ({} reads total)" \
-                    .format(aligned_reads-biotype_count_dict['biotype_counts']['no_overlap'], aligned_reads, i))
+                    .format(aligned_reads-biotype_count_dict['biotype_counts']['no_overlap'], read_counts['aligned_reads'], i))
     logging.info ("{} reads had multiple feature overlaps\n" \
                     .format(biotype_count_dict['biotype_counts']['multiple_features']))
     
     
-    # Make a string table out of the counts
-    counts_string = 'Type\tRead Count\n'
+    # Make a string table out of the general counts
+    counts_string = 'Feature Overlaps\n----------------\nType\tRead Count\n'
+    for f_type in sorted(read_counts, key=read_counts.get, reverse=True):
+        if read_counts[f_type] == 0:
+            continue
+        counts_string += "{}\t{}{}".format(f_type, read_counts[f_type], os.linesep)
+    
+    # Make a string table out of the biotype overlaps
+    counts_string += '\n\n\nBiotype Overlaps\n----------------\nType\tRead Count\n'
     for biotype in sorted(biotype_count_dict['biotype_counts'], key=biotype_count_dict['biotype_counts'].get, reverse=True):
         if biotype_count_dict['biotype_counts'][biotype] == 0:
             continue
@@ -232,7 +283,7 @@ def count_biotype_overlaps(aligned_bam, selected_features, biotype_count_dict, n
         raise IOError(e)
     
     # Return the counts
-    return biotype_count_dict
+    return (biotype_count_dict, read_counts)
 
 
 
@@ -375,7 +426,10 @@ def plot_epic_histogram(biotype_count_dict, output_basename, title="Annotation B
     biotype overlap
     Input: dict of biotype labels with dict of lengths and counts
     Input: file basename
-    Input: output fn
+    Input: plot title
+    Input: Plot each column as percentages
+    Input: Plot reads not overlapping biotype features
+    Input: Use equidistant colours for legend
     Returns filenames of PNG and PDF graphs
     """
     
@@ -538,6 +592,81 @@ def plot_epic_histogram(biotype_count_dict, output_basename, title="Annotation B
 
 
 
+def plot_ft_bars(read_counts, output_basename, title="Feature Type Overlaps"):
+    """
+    Plot a bar graph of overlaps with genes, transcripts, rRNA and MT DNA.
+    Input: dict of feature type labels with associated counts
+    Input: file basename
+    Input: Title
+    Returns filenames of PNG and PDF graphs
+    """
+    
+    # SET UP VARIABLES
+    bar_width = 0.8
+    plt_labels = ['gene_overlap','transcript_overlap','rRNA_overlap','MT_overlap']
+    plt_values = [ read_counts['gene_overlap'], read_counts['transcript_overlap'], read_counts['rRNA_overlap'], read_counts['MT_overlap'] ]
+    
+    # SET UP OBJECTS
+    fig = plt.figure()
+    axes = fig.add_subplot(111)
+    xpos = numpy.arange(1, len(plt_labels)+1)
+    
+    # PLOT GRAPH
+    barlist = axes.bar(xpos, plt_values, align='center', linewidth=0) 
+    
+    # Give more room for the labels on the left and top
+    # plt.subplots_adjust(left=0.25,top=0.8, bottom=0.15)
+    
+    # X AXIS
+    axes.set_zticks(ypos)
+    axes.set_zticklabels(plt_labels)
+    axes.tick_params(top=False, bottom=False)
+    axes.set_xlim((0,len(plt_labels)+1))
+    
+    # Y AXIS
+    axes.grid(True, zorder=0, which='both', axis='y', linestyle='-', color='#DEDEDE', linewidth=1)
+    axes.set_axisbelow(True)
+    
+    # SECONDARY Y AXIS
+    ax2 = axes.twinx()
+    ax2.set_ylim(axes.get_xlim())
+    ax1_ticks = axes.get_xticks()
+    # I have no idea why I have to get rid of these two elements....
+    ax1_ticks = ax1_ticks[1:-1]
+    ax2.set_yticks(ax1_ticks)
+    ax2.set_ylabel('Percentage of Aligned Reads')
+    
+    # SECONDARY AXIS LABELS
+    def percent_total(counts):
+        y = [(x/read_counts['aligned_reads'])*100 for x in counts]
+        return ["%.2f%%" % z for z in y]
+    ax2_labels = percent_total(ax2.get_yticks())
+    ax2.set_yticklabels(ax2_labels)    
+    
+    # LABELS
+    axes.set_ylabel('Number of Reads')
+    axes.set_xlabel('Feature Type')
+    plt.text(0.5, 1.2, title, horizontalalignment='center',
+                fontsize=16, weight='bold', transform=axes.transAxes)
+    plt.text(0.5, 1.15, output_basename, horizontalalignment='center',
+                fontsize=10, weight='light', transform = axes.transAxes)
+    axes.tick_params(axis='both', labelsize=8)
+    ax2.tick_params(axis='both', labelsize=8)
+    
+    # SAVE OUTPUT
+    png_fn = "{}_featureOverlaps.png".format(output_basename)
+    pdf_fn = "{}_featureOverlaps.pdf".format(output_basename)
+    logging.info("Saving to {} and {}".format(png_fn, pdf_fn))
+    fig.savefig(png_fn)
+    fig.savefig(pdf_fn)
+    
+    # Return the filenames
+    return {'png': png_fn, 'pdf': pdf_fn}
+  
+
+
+
+
 
 # Stolen from @wefer
 # https://github.com/wefer/color_picker/blob/master/dist_colors.py
@@ -611,8 +740,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser("Count read overlaps with different biotypes.")
     parser.add_argument("-g", "--genome-feature-file", dest="annotation_file", required=True,
                         help="GTF/GFF genome feature file to use for annotation (must match reference file)")
-    parser.add_argument("-t", "--genome-feature", dest="feature_type", default='exon',
-                        help="Type of annotation feature to count")
+    parser.add_argument("-g", "--gene-feature", dest="gene_feature_type", default='gene',
+                        help="Type of annotation feature to count for gene regions")
+    parser.add_argument("-t", "--transcript-feature", dest="transcript_feature_type", default='exon',
+                        help="Type of annotation feature to count for transcribed regions")
+    parser.add_argument("-r", "--rrna-biotype", dest="rrna_biotype", default='rRNA',
+                        help="Biotype flag used to identify rRNA")
+    parser.add_argument("-m", "--mt-chr", dest="mt_chr", default='MT',
+                        help="Identifier for mitochondiral chromosome. 'chr' automatically stripped. Set to NA to ignore.")
     parser.add_argument("-b", "--biotype-flag", dest="biotype_flag", default='gene_type',
                         help="GTF biotype flag (default = gene_type or *biotype*)")
     parser.add_argument("-n", "--num-lines", dest="num_lines", type=int, default=10000000,
