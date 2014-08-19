@@ -277,6 +277,12 @@ foreach my $fn (@filenames){
 		$binstats .= $line."\n";
 	}
 	
+	# Sanity check for strandedness
+	if($TS_num_Cs == 0 or $BS_num_Cs == 0){
+		warn sprintf("\nError in total number of Top Strand Cs (%d) or Bottom Strand Cs (%d).\nCould be an input format problem? Ignoring --stranded..\n", $TS_num_Cs, $BS_num_Cs);
+		$stranded = 0;
+	}
+	
 	# Calculate summary & plot data
 	my @plot;
 	my @cov_counts_array;
@@ -302,7 +308,7 @@ foreach my $fn (@filenames){
 			push @cov_counts_array, $bin;
 		}
 	}
-		
+	
 	if($stranded){
 		my $TS_cum_count = $TS_num_Cs;
 		my $BS_cum_count = $BS_num_Cs;
@@ -388,32 +394,28 @@ foreach my $fn (@filenames){
 		$summary .= sprintf("\tMean coverage outside Regions: %.2f\n\tMedian coverage outside Regions: %d\n", mean(\@region_notcov_counts_array), median(\@region_notcov_counts_array));
 	}
 	if($stranded){
-		if($TS_num_Cs == 0 or $BS_num_Cs == 0){
-			warn sprintf("\nError in total number of Top Strand Cs (%d) or Bottom Strand Cs (%d). Could be an input format problem?", $TS_num_Cs, $BS_num_Cs);
-		} else {
-			$summary .= "\nSummary of coverage on Top Strand (+):\n";
-			$summary .= sprintf("\tCovered Cs: %d out of %d (%.2f%%)\n", $TS_binned_cov_counts, $TS_num_Cs, (($TS_binned_cov_counts/$TS_num_Cs)*100));
-			if($regions){
-				$summary .= sprintf("\tCovered Regions Cs: %d out of %d (%.2f%%)\n", $TS_binned_region_cov_counts, $TS_num_roi_Cs, (($TS_binned_region_cov_counts/$TS_num_roi_Cs)*100));
-				$summary .= sprintf("\tCovered Cs outside Regions: %d out of %d (%.2f%%)\n", $TS_binned_region_notcov_counts, $TS_num_notroi_Cs, (($TS_binned_region_notcov_counts/$TS_num_notroi_Cs)*100));
-			}
-			$summary .= sprintf("\tMean coverage: %.2f\n\tMedian coverage: %d\n", mean(\@TS_cov_counts_array), median(\@TS_cov_counts_array));
-			if($regions){
-				$summary .= sprintf("\tMean Regions coverage: %.2f\n\tMedian Regions coverage: %d\n", mean(\@TS_region_cov_counts_array), median(\@TS_region_cov_counts_array));
-				$summary .= sprintf("\tMean coverage outside Regions: %.2f\n\tMedian coverage outside Regions: %d\n", mean(\@TS_region_notcov_counts_array), median(\@TS_region_notcov_counts_array));
-			}
-		
-			$summary .= "\nSummary of coverage on Bottom Strand (-):\n";
-			$summary .= sprintf("\tCovered Cs: %d out of %d (%.2f%%)\n", $BS_binned_cov_counts, $BS_num_Cs, (($BS_binned_cov_counts/$BS_num_Cs)*100));
-			if($regions){
-				$summary .= sprintf("\tCovered Regions Cs: %d out of %d (%.2f%%)\n", $BS_binned_region_cov_counts, $BS_num_roi_Cs, (($BS_binned_region_cov_counts/$BS_num_roi_Cs)*100));
-				$summary .= sprintf("\tCovered Cs outside Regions: %d out of %d (%.2f%%)\n", $BS_binned_region_notcov_counts, $BS_num_notroi_Cs, (($BS_binned_region_notcov_counts/$BS_num_notroi_Cs)*100));
-			}
-			$summary .= sprintf("\tMean coverage: %.2f\n\tMedian coverage: %d\n", mean(\@BS_cov_counts_array), median(\@BS_cov_counts_array));
-			if($regions){
-				$summary .= sprintf("\tMean Regions coverage: %.2f\n\tMedian Regions coverage: %d\n", mean(\@BS_region_cov_counts_array), median(\@BS_region_cov_counts_array));
-				$summary .= sprintf("\tMean coverage outside Regions: %.2f\n\tMedian coverage outside Regions: %d\n", mean(\@BS_region_notcov_counts_array), median(\@BS_region_notcov_counts_array));
-			}
+		$summary .= "\nSummary of coverage on Top Strand (+):\n";
+		$summary .= sprintf("\tCovered Cs: %d out of %d (%.2f%%)\n", $TS_binned_cov_counts, $TS_num_Cs, (($TS_binned_cov_counts/$TS_num_Cs)*100));
+		if($regions){
+			$summary .= sprintf("\tCovered Regions Cs: %d out of %d (%.2f%%)\n", $TS_binned_region_cov_counts, $TS_num_roi_Cs, (($TS_binned_region_cov_counts/$TS_num_roi_Cs)*100));
+			$summary .= sprintf("\tCovered Cs outside Regions: %d out of %d (%.2f%%)\n", $TS_binned_region_notcov_counts, $TS_num_notroi_Cs, (($TS_binned_region_notcov_counts/$TS_num_notroi_Cs)*100));
+		}
+		$summary .= sprintf("\tMean coverage: %.2f\n\tMedian coverage: %d\n", mean(\@TS_cov_counts_array), median(\@TS_cov_counts_array));
+		if($regions){
+			$summary .= sprintf("\tMean Regions coverage: %.2f\n\tMedian Regions coverage: %d\n", mean(\@TS_region_cov_counts_array), median(\@TS_region_cov_counts_array));
+			$summary .= sprintf("\tMean coverage outside Regions: %.2f\n\tMedian coverage outside Regions: %d\n", mean(\@TS_region_notcov_counts_array), median(\@TS_region_notcov_counts_array));
+		}
+	
+		$summary .= "\nSummary of coverage on Bottom Strand (-):\n";
+		$summary .= sprintf("\tCovered Cs: %d out of %d (%.2f%%)\n", $BS_binned_cov_counts, $BS_num_Cs, (($BS_binned_cov_counts/$BS_num_Cs)*100));
+		if($regions){
+			$summary .= sprintf("\tCovered Regions Cs: %d out of %d (%.2f%%)\n", $BS_binned_region_cov_counts, $BS_num_roi_Cs, (($BS_binned_region_cov_counts/$BS_num_roi_Cs)*100));
+			$summary .= sprintf("\tCovered Cs outside Regions: %d out of %d (%.2f%%)\n", $BS_binned_region_notcov_counts, $BS_num_notroi_Cs, (($BS_binned_region_notcov_counts/$BS_num_notroi_Cs)*100));
+		}
+		$summary .= sprintf("\tMean coverage: %.2f\n\tMedian coverage: %d\n", mean(\@BS_cov_counts_array), median(\@BS_cov_counts_array));
+		if($regions){
+			$summary .= sprintf("\tMean Regions coverage: %.2f\n\tMedian Regions coverage: %d\n", mean(\@BS_region_cov_counts_array), median(\@BS_region_cov_counts_array));
+			$summary .= sprintf("\tMean coverage outside Regions: %.2f\n\tMedian coverage outside Regions: %d\n", mean(\@BS_region_notcov_counts_array), median(\@BS_region_notcov_counts_array));
 		}
 	}
 	
