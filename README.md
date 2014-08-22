@@ -80,19 +80,19 @@ Arguments shown in order received by `count_biotypes()`.
 
 Command Line Flag | `count_biotypes()` argument name | Description
 ----------------- | -------------------- | -----------
-`--genome-feature-file`, `-g` | `annotation_file` | Required.<br>Path to annotation file.
+`-a`, `--genome-feature-file` | `annotation_file` | Required.<br>Path to annotation file.
 `<input_bam_list>` | `input_bam_list` | Required.<br>List of paths to aligned BAM files.
 `-g`, `--gene-feature` | `gene_feature` | Default: `gene`.<br>Feature type for genes.
 `-t`, `--transcript-feature` | `transcript_feature` | Default: `exon`.<br>Feature type for transcribed regions (for which biotypes will be counted).
 `-r`, `--rrna-biotype` | `rrna_biotype` | Default: `rRNA`.<br>Biotype label which identifies ribosomal RNA.
 `-m`, `--mt-chr` | `mt_chr` | Default: `MT`.<br>Label for mitochondrial chromosome. `chr` will be automatically stripped. Case insensitive.
-`--biotype-flag`, `-b` | `biotype_flag` | Default: `gene_type` (will also look for any flag containing `biotype`).<br>Name of annotation flag to collect biotype label from.
-`--genome-feature`, `-t` | `feature_type` | Default: `exon`.<br>Type of feature to inspect within GTF file.
-`--num-lines`, `-n` | `num_lines` | Default: 10 million.<br>Number of lines to read from aligned BAM file.
-`--no-overlap`, `-o` | `no_overlap` | Default: False.<br>Include features with no feature overlap in plots.
-`--cols`, `-c` | `equidistant_cols` | Default: False.<br>Plot graphs using equidistant colours to prevent duplicated label colours.
-`--log`, `-l` | `log_level` | Default: info.<br>Specify the level of logging: debug, info or warning.
-`--log-output`, `-u` | `log_output` | Default: stdout.<br>Log output filename.
+`-b`, `--biotype-flag` | `biotype_flag` | Default: `gene_type` (will also look for any flag containing `biotype`).<br>Name of annotation flag to collect biotype label from.
+`-t`, `--genome-feature` | `feature_type` | Default: `exon`.<br>Type of feature to inspect within GTF file.
+`-n`, `--num-lines` | `num_lines` | Default: 10 million.<br>Number of lines to read from aligned BAM file.
+`-o`, `--no-overlap` | `no_overlap` | Default: False.<br>Include features with no feature overlap in plots.
+`-c`, `--cols` | `equidistant_cols` | Default: False.<br>Plot graphs using equidistant colours to prevent duplicated label colours.
+`-l`, `--log` | `log_level` | Default: info.<br>Specify the level of logging: debug, info or warning.
+`-u`, `--log-output` | `log_output` | Default: stdout.<br>Log output filename.
 
 ### Dependencies
 
@@ -149,7 +149,7 @@ Command Line Flag | Description
 ----------------- | -----------
 `--regions <regions.bed>` | Default: None<br>Supply a BED file with regions of interest. The script will show coverage inside and outside these regions
 `--stranded` | Default: No.<br>Split the report up into forward and reverse strands
-`--min_cov` and `--max_cov` | Defaults: `0x, 100x`.<br>The minimum and maximum coverage limits to consider / plot
+`--min_cov` and `--max_cov` | Defaults: `0x, 50x`.<br>The minimum and maximum coverage limits to consider / plot
 `--binsize` | Default: `1`.<br>The coverage bin size to use - what size steps to use between `--min_cov` and `--max_cov`
 `--numlines` | Default: `1000000`.<br>Number of lines to process. More lines gives more accuracy but takes longer to run. Note: if the imput is sorted and your sample biased it's a good idea to specify a large number.
 `--append` | Default: `_coverageStats.txt`.<br>String to append to results filenames

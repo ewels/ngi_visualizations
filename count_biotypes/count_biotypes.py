@@ -23,7 +23,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-def count_biotypes(annotation_file, input_bam_list, biotype_flag='gene_type', gene_feature_type='gene', transcript_feature_type='exon', rrna_biotype='rRNA', mt_chr='MT', num_lines=10000000, no_overlap=False, equidistant_cols=False):
+def count_biotypes(annotation_file, input_bam_list, biotype_flag='gene_type', gene_feature_type='gene', transcript_feature_type='exon', rrna_biotype='rRNA', mt_chr='MT', num_lines=100000000, no_overlap=False, equidistant_cols=False):
     """
     Count the biotypes
     """
@@ -129,9 +129,10 @@ def parse_gtf_biotypes(annotation_file, biotype_label='gene_type', gene_feature_
         if i % 100000 == 0 and i > 0:
             logging.debug("{} lines processed..".format(i))
         
-        # Collect gene features
+        # Collect gene features with strand as the value
+        # The dict is unstranded, so this is ignored for the key
         if feature.type == gene_feature_type:
-            gene_features[ feature.iv ] += 'gene'
+            gene_features[ feature.iv ] = feature.iv.strand
         
         # Collect features and initialise biotype count objects
         if feature.type == count_feature_type:
@@ -176,7 +177,9 @@ def parse_gtf_biotypes(annotation_file, biotype_label='gene_type', gene_feature_
         logging.info(" {:15}\t{:4} biotypes\t{:8} labelled features\t{:3} unlabelled features" \
             .format(ft, num_ft_bts, feature_type_biotype_labelled[ft], feature_type_biotype_unlabelled[ft]))
     
-    if(join(biotype_counts.keys()) == 0):
+    # Check that we've picked up some biotype labels
+    # We preset four labels: no_overlap, no_biotype, multiple_features and other
+    if(len(biotype_counts.keys()) == 4):
         raise ValueError('No features have biotypes!')
     
     return {'selected_features': selected_features, 'gene_features': gene_features, 
@@ -198,8 +201,9 @@ def count_read_overlaps(aligned_bam, gene_features, selected_features, rrna_biot
         'aligned_reads': 0,
         'gene_overlap': 0,
         'transcript_overlap': 0,
+        'correct_strand': 0,
         'rRNA_overlap': 0,
-        'MT_overlap': 0
+        'MT_overlap': 0,
     }
     for i, alnmt in enumerate(bamfile):
         if i > int(number_lines):
@@ -212,15 +216,26 @@ def count_read_overlaps(aligned_bam, gene_features, selected_features, rrna_biot
         if alnmt.aligned:
             read_counts['aligned_reads'] += 1
             
-            # Count gene overlaps
+            # Count gene overlaps and strandedness (one overlap max)
+            # TODO - this is broken. WHYYY?
             giset = None
-            for iv2, g_step_set in gene_features[ alnmt.iv ].steps():
+            for iv2, step_set in gene_features[ alnmt.iv ].steps():
                 if giset is None:
-                    giset = g_step_set.copy()
+                    giset = step_set.copy()
                 else:
-                    giset.intersection_update( g_step_set )
+                    giset.intersection_update( step_set )
+            # giset = None
+            # for iv2, step_set in gene_features[ alnmt.iv ].steps():
+            #     if giset is None:
+            #         giset = step_set.copy()
+            #     else:
+            #         giset.intersection_update( step_set )
             if len(giset) > 0:
+                strand = list(giset)[0]
                 read_counts['gene_overlap'] += 1
+                logging.info("{}\t{}".format(alnmt.iv.strand, strand))
+                if alnmt.iv.strand == strand:
+                    read_counts['correct_strand'] += 1
             
             # Count mitochondrial reads
             if alnmt.iv.chrom == mt_chr:
@@ -254,7 +269,8 @@ def count_read_overlaps(aligned_bam, gene_features, selected_features, rrna_biot
             biotype_count_dict['biotype_lengths'][key][alnmt.iv.length] += 1
     
     logging.info ("\n{} overlaps found from {} aligned reads ({} reads total)" \
-                    .format(aligned_reads-biotype_count_dict['biotype_counts']['no_overlap'], read_counts['aligned_reads'], i))
+        .format(read_counts['aligned_reads'] - biotype_count_dict['biotype_counts']['no_overlap'],
+                read_counts['aligned_reads'], i))
     logging.info ("{} reads had multiple feature overlaps\n" \
                     .format(biotype_count_dict['biotype_counts']['multiple_features']))
     
@@ -606,6 +622,9 @@ def plot_ft_bars(read_counts, output_basename, title="Feature Type Overlaps"):
     plt_labels = ['gene_overlap','transcript_overlap','rRNA_overlap','MT_overlap']
     plt_values = [ read_counts['gene_overlap'], read_counts['transcript_overlap'], read_counts['rRNA_overlap'], read_counts['MT_overlap'] ]
     
+    # Convert values to percentages
+    plt_values = [(x/read_counts['aligned_reads'])*100 for x in plt_values]
+    
     # SET UP OBJECTS
     fig = plt.figure()
     axes = fig.add_subplot(111)
@@ -614,44 +633,26 @@ def plot_ft_bars(read_counts, output_basename, title="Feature Type Overlaps"):
     # PLOT GRAPH
     barlist = axes.bar(xpos, plt_values, align='center', linewidth=0) 
     
-    # Give more room for the labels on the left and top
-    # plt.subplots_adjust(left=0.25,top=0.8, bottom=0.15)
+    # Give more room for the labels
+    plt.subplots_adjust(top=0.8)
     
     # X AXIS
-    axes.set_zticks(ypos)
-    axes.set_zticklabels(plt_labels)
+    axes.set_xticks(xpos)
+    axes.set_xticklabels(plt_labels)
     axes.tick_params(top=False, bottom=False)
     axes.set_xlim((0,len(plt_labels)+1))
     
     # Y AXIS
+    axes.set_xlim((0,read_counts['aligned_reads']))
     axes.grid(True, zorder=0, which='both', axis='y', linestyle='-', color='#DEDEDE', linewidth=1)
     axes.set_axisbelow(True)
     
-    # SECONDARY Y AXIS
-    ax2 = axes.twinx()
-    ax2.set_ylim(axes.get_xlim())
-    ax1_ticks = axes.get_xticks()
-    # I have no idea why I have to get rid of these two elements....
-    ax1_ticks = ax1_ticks[1:-1]
-    ax2.set_yticks(ax1_ticks)
-    ax2.set_ylabel('Percentage of Aligned Reads')
-    
-    # SECONDARY AXIS LABELS
-    def percent_total(counts):
-        y = [(x/read_counts['aligned_reads'])*100 for x in counts]
-        return ["%.2f%%" % z for z in y]
-    ax2_labels = percent_total(ax2.get_yticks())
-    ax2.set_yticklabels(ax2_labels)    
-    
     # LABELS
-    axes.set_ylabel('Number of Reads')
-    axes.set_xlabel('Feature Type')
     plt.text(0.5, 1.2, title, horizontalalignment='center',
                 fontsize=16, weight='bold', transform=axes.transAxes)
     plt.text(0.5, 1.15, output_basename, horizontalalignment='center',
                 fontsize=10, weight='light', transform = axes.transAxes)
     axes.tick_params(axis='both', labelsize=8)
-    ax2.tick_params(axis='both', labelsize=8)
     
     # SAVE OUTPUT
     png_fn = "{}_featureOverlaps.png".format(output_basename)
@@ -740,7 +741,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser("Count read overlaps with different biotypes.")
     parser.add_argument("-g", "--genome-feature-file", dest="annotation_file", required=True,
                         help="GTF/GFF genome feature file to use for annotation (must match reference file)")
-    parser.add_argument("-g", "--gene-feature", dest="gene_feature_type", default='gene',
+    parser.add_argument("-a", "--gene-feature", dest="gene_feature_type", default='gene',
                         help="Type of annotation feature to count for gene regions")
     parser.add_argument("-t", "--transcript-feature", dest="transcript_feature_type", default='exon',
                         help="Type of annotation feature to count for transcribed regions")
@@ -750,7 +751,7 @@ if __name__ == "__main__":
                         help="Identifier for mitochondiral chromosome. 'chr' automatically stripped. Set to NA to ignore.")
     parser.add_argument("-b", "--biotype-flag", dest="biotype_flag", default='gene_type',
                         help="GTF biotype flag (default = gene_type or *biotype*)")
-    parser.add_argument("-n", "--num-lines", dest="num_lines", type=int, default=10000000,
+    parser.add_argument("-n", "--num-lines", dest="num_lines", type=int, default=100000000,
                         help="Number of alignments to query")
     parser.add_argument("-o", "--no-overlap", dest="no_overlap", action="store_true",
                         help="Include reads that don't have any feature overlap")
