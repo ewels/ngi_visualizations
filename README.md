@@ -149,7 +149,8 @@ Command Line Flag | Description
 ----------------- | -----------
 `--regions <regions.bed>` | Default: None<br>Supply a BED file with regions of interest. The script will show coverage inside and outside these regions
 `--stranded` | Default: No.<br>Split the report up into forward and reverse strands
-`--min_cov` and `--max_cov` | Defaults: `0x, 50x`.<br>The minimum and maximum coverage limits to consider / plot
+`--min_cov` | Default: `0x`.<br>The minimum coverage limit to consider / plot
+`--max_cov` | Default: `15x`; `50x` if `--regions` is set.<br>The maximum coverage limit to consider / plot
 `--binsize` | Default: `1`.<br>The coverage bin size to use - what size steps to use between `--min_cov` and `--max_cov`
 `--numlines` | Default: `1000000`.<br>Number of lines to process. More lines gives more accuracy but takes longer to run. Note: if the imput is sorted and your sample biased it's a good idea to specify a large number.
 `--append` | Default: `_coverageStats.txt`.<br>String to append to results filenames

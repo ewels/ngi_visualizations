@@ -30,7 +30,7 @@ my $BS_num_notroi_Cs = 0;
 my $stranded;
 my $regions;
 my $min_cov = 0;
-my $max_cov = 50;
+my $max_cov;
 my $binsize = 1;
 my $numlines = 1000000;
 my $append = "_coverageStats.txt";
@@ -58,7 +58,7 @@ if($help){
 --min_cov (default = 0)
 	Minimum coverage to consider
 	
---max_cov (default = 100)
+--max_cov (default = 15, 50 with capture regions)
 	Maximum coverage to consider
 	
 --binsize (default = 1)
@@ -81,12 +81,25 @@ if($help){
 }
 if(!$config_result){
 	die "Error! could not parse command line options..\n";
-} elsif(!$quiet) {
+}
+
+# Set the default max coverage
+unless($max_cov){
+	if($regions){
+		$max_cov = 50;
+	} else {
+		$max_cov = 15;
+	}
+}
+
+# Print the config options
+if(!$quiet) {
 	warn "Configuration Options:\n";
 	if($regions){ warn "\tROI File: $regions\n"; }
 	warn "\tMin Coverage: $min_cov\n\tMax Coverage: $max_cov\n\tBin Size: $binsize\n\tNumber lines to process: $numlines\n\tOutput filename append: $append\n\n";
 }
 
+# Load in the input files
 my @filenames = @ARGV;
 if(scalar @filenames == 0){ die "Error! No input filenames found.. Use --help for instructions\n"; }
 
