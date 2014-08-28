@@ -8,8 +8,8 @@
 
 # print_usage()
 function print_usage { echo -e  "\nUsage:\t$0\n" \
-								"\t\t[-g <GTF reference>]\n" \
-								"\t\t[-o <output_directory>]\n" \
+                                "\t\t[-g <GTF reference>]\n" \
+                                "\t\t[-o <output_directory>]\n" \
                                 "\t\t[-n <cores>]\n" \
                                 "\t\t<aligned_bam_file> [<additional_bam_files>]\n" >&2 ;
                      }
@@ -41,23 +41,24 @@ function exists_is_readable () {
 
 function cufflinks_job() {
     INPUT_FN=$1
-	INPUT_PATH=$(readlink -m $INPUT_FN)
-    OUTPUT="$OUTPUT_DIR/${INPUT_FN%.bam}/"
-	LOGFILE="$LOG_DIR/${INPUT_FN%.bam}_cufflinks.log"
-	
-	if [[ ! -d $OUTPUT ]]; then
-		CL="cufflinks --frag-bias-correct $FA_REF --GTF-guide $GTF_FILE --output-dir $OUTPUT --num-threads $NUM_CORES $INPUT_PATH"
-		echo -e "\nINFO:\t\tSubmitting bash job with picard tools command line:\n\t\t$CL" 1>&2
-		
-		SB="sbatch -p core -n $NUM_CORES --open-mode=append -o $LOGFILE -J cufflinks_$INPUT_FN -A b2013064 -t 1:00:00 --wrap=\"$CL\""
-		# echo -e "\nINFO:\t\tJob submit command:\n\t\t$SB" 1>&2
-		
-	    eval $SB 1>&2
-	    if [[ ! $? -eq 0 ]]; then
-	        echo -e "\nWARNING:\tJob submission failed for input file \"$INPUT\"" 1>&2
-	        return 1
-	    fi
-	else
+    INPUT_BN=${INPUT_FN##*/}
+    INPUT_PATH=$(readlink -m $INPUT_FN)
+    OUTPUT="$OUTPUT_DIR/${INPUT_BN%.bam}/"
+    LOGFILE="$LOG_DIR/${INPUT_BN%.bam}_cufflinks.log"
+    
+    if [[ ! -d $OUTPUT ]]; then
+        CL="cufflinks --frag-bias-correct $FA_REF --GTF-guide $GTF_FILE --output-dir $OUTPUT --num-threads $NUM_CORES $INPUT_PATH"
+        echo -e "\nINFO:\t\tSubmitting bash job with picard tools command line:\n\t\t$CL" 1>&2
+        
+        SB="sbatch -p core -n $NUM_CORES --open-mode=append -o $LOGFILE -J cufflinks_$INPUT_BN -A b2013064 -t 1:00:00 --wrap=\"$CL\""
+        echo -e "\nINFO:\t\tJob submit command:\n\t\t$SB" 1>&2
+        
+        eval $SB 1>&2
+        if [[ ! $? -eq 0 ]]; then
+            echo -e "\nWARNING:\tJob submission failed for input file \"$INPUT\"" 1>&2
+            return 1
+        fi
+    else
         echo -e "WARNING:\tOutput directory \"$OUTPUT\" already exists. Skipping job submission..." 1>&2
         return 1
     fi
@@ -66,19 +67,19 @@ function cufflinks_job() {
 # GET INPUT
 while getopts ":b:g:l:o:n:h" opt; do
     case $opt in
-	 	b)
+         b)
             FA_REF=$OPTARG
             ;;
-	 	g)
+         g)
             GTF_FILE=$OPTARG
             ;;
-	 	l)
+         l)
             LOG_DIR=$OPTARG
             ;;
-		o)
+        o)
             OUTPUT_DIR=$OPTARG
             ;;
-		n)
+        n)
             NUM_CORES=$OPTARG
             ;;
         h)
@@ -103,8 +104,8 @@ done
 
 # CHECK WE HAVE A REFERENCE FASTA FILE
 if [[ ! $FA_REF ]]; then
-	echo -e "ERROR:\t\tNo genome fasta file specified (-b) - exiting.." 1>&2
-	exit
+    echo -e "ERROR:\t\tNo genome fasta file specified (-b) - exiting.." 1>&2
+    exit
 fi
 if [[ ! $( exists_is_readable $FA_REF) ]]; then
     echo -e "ERROR:\t\tCannot read reference fasta file \"$FA_REF\" - exiting.." 1>&2
@@ -113,8 +114,8 @@ fi
 
 # CHECK WE HAVE A GTF FILE
 if [[ ! $GTF_FILE ]]; then
-	echo -e "ERROR:\t\tNo genome annotation file specified (-g) - exiting.." 1>&2
-	exit
+    echo -e "ERROR:\t\tNo genome annotation file specified (-g) - exiting.." 1>&2
+    exit
 fi
 if [[ ! $( exists_is_readable $GTF_FILE) ]]; then
     echo -e "ERROR:\t\tCannot read annotation file \"$GTF_FILE\" - exiting.." 1>&2
@@ -165,25 +166,25 @@ module load cufflinks/2.2.1
 
 # Go through the input files
 for (( i=$OPTIND; i <= ${#@}; i++ )) {
-	FN="${@:$i:1}"
-	
-	# Can we read this input file?
-	if [[ ! $( exists_is_readable $FN) ]]; then
+    FN="${@:$i:1}"
+    
+    # Can we read this input file?
+    if [[ ! $( exists_is_readable $FN) ]]; then
         echo -e "ERROR:\t\tSkipping file \"$FN\": "$FILE_NOT_EXISTS_OR_NOT_READABLE_ERROR_TEXT 1>&2
         continue
     fi
-	
-	# Is this a bam file?
-	if [[ ! $( extension_is_bam $FN) ]]; then
+    
+    # Is this a bam file?
+    if [[ ! $( extension_is_bam $FN) ]]; then
         echo -e "ERROR:\t\tSkipping file \"$FN\": "$NOT_BAM_ERROR_TEXT 1>&2
         continue
     fi
-	
-	# Set off cufflinks job
-	if [[ $( cufflinks_job $FN) ]]; then
+    
+    # Set off cufflinks job
+    if [[ $( cufflinks_job $FN) ]]; then
         echo -e "ERROR:\t\tCufflinks job submission failed: \"$FN\"" 1>&2
     fi
-	
+    
 }
 
 echo -e "INFO:\t\tJob submission finished" 1>&2
