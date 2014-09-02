@@ -5,6 +5,10 @@ A collection of next-gen sequencing visualisation scripts.
 
 * [Count Biotypes](#count-biotypes)
 	* Uses HTSeq to plot read overlaps with different feature biotype flags
+* [Subsample: Observed Genes](#subsample-observed-genes)
+    * Group of scripts to plot the number of observed genes at varying sample
+    subsampling proportions. Can give an impression of library complexity on
+    a biological level.
 * Bismark Addons
 	* [Bismark Coverage Curves](#bismark-coverage-curves) - Plots the proportion of cytosines meeting increasing coverage thresholds
 	* [Bismark Window Sizes](#bismark-window-sizes) - Plots the proportion of windows passing observation thresholds with increasing window sizes
@@ -105,6 +109,81 @@ The script is written in Python. The following libraries are required:
 * collections (defaultdict)
 * logging
 * os
+
+
+---------------------------------------------------------------------------
+
+## Subsample: Observed Genes
+
+Software such as [Preseq](http://smithlabresearch.org/software/preseq/) can
+show how sequencing library diversity changes with increasing sequencing 
+depth. This tool is an attempt to generate a similar metric using a measurement
+which is more biologically relevant for RNA-Sequencing datasets: the number
+of different genes which have been observed _(FPKM > 1)_.
+
+The package is comprised of three scripts; one to subsample a set of aligned BAM
+files using [Picard](http://picard.sourceforge.net/command-line-overview.shtml#DownsampleSam);
+one to count the FPKM gene counts using [Cufflinks](http://cufflinks.cbcb.umd.edu/)
+and finally a Python script which takes this output and plots a graph.
+
+**Note:** The first two scripts are currently written to work with our setup
+in SciLifeLab, and will require modification to run on different systems.
+
+### Step 1: Subsample the BAM files
+```bash
+bash submit_subsample_jobs.sh *.bam
+```
+This will set off SLURM sbatch jobs to create 9 subsampled files for each
+input BAM file (10% to 90% in 10% steps).
+
+#### Parameters
+Output directory can be specified using `-o <output directory>`.
+
+### Step 2: Cufflinks analysis
+Once the subsampling is complete, cufflinks must be run on each file.
+```bash
+bash submit_cufflinks_jobs.sh -b <fasta reference> -g <gtf reference> *.bam
+```
+This will create jobs for the cufflinks analysis. 
+
+#### Parameters
+Again, the output directory can be specified using `-o <output directory>`.
+
+### Step 3: Plotting
+Finally, submit the directories of the completed cufflinks analysis to the
+plotting script:
+```bash
+python plot_observed_genes.py *_cufflinksAnalysis/
+```
+The script will parse the directory names, assuming the structure
+`<sample_name>_<subsample_proportion>`, eg:
+```
+sampleOne_0.1/
+sampleOne_0.2/
+..
+sampleOne_1.0/
+sampleTwo_0.1/
+..
+sampleTwo_1.0/
+````
+#### Parameters
+
+### Example output
+### Dependencies
+The scripts are written in bash and Python.
+[Picard](http://picard.sourceforge.net/)
+and [Cufflinks](http://cufflinks.cbcb.umd.edu/) must be installed for the first
+two steps.
+
+The following Python libraries are required:
+
+* [matplotlib](http://matplotlib.org/)
+* [numpy](http://www.numpy.org/) **is it?**
+* argparse
+* collections (defaultdict)
+* logging
+* os
+
 
 
 ---------------------------------------------------------------------------
