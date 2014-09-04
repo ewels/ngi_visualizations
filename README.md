@@ -37,6 +37,17 @@ alignment lengths.
 
 The script is written in Python and can be run on the command line or imported into another python script. Overlaps are measured using the [HTSeq library](http://www-huber.embl.de/users/anders/HTSeq/).
 
+### Example output
+The following plots were generated from a Total Small RNA run in Human cells,
+accession [SRR1304304](http://www.ncbi.nlm.nih.gov/sra/?term=SRR1304304).
+
+![Biotype overlaps](https://raw.githubusercontent.com/ewels/visualizations/master/examples/SRR1304304_trimmed_aligned_biotypeCounts.png)
+
+![Biotype lengths](https://raw.githubusercontent.com/ewels/visualizations/master/examples/SRR1304304_trimmed_aligned_biotypeLengths.png)
+
+![Biotype length percentages](https://raw.githubusercontent.com/ewels/visualizations/master/examples/SRR1304304_trimmed_aligned_biotypeLengthPercentages.png)
+
+
 ### Usage
 
 On the command line:
@@ -67,16 +78,6 @@ called `bt_translations.txt` comes with the script - each line can contain a
 search pattern and a replacement label (tab separated). Search wildcards can be
 included by using an asterisk (`*`). Multiple search strings can be given the
 same biotype label to manually group biotypes together.
-
-### Example output
-The following plots were generated from a Total Small RNA run in Human cells,
-accession [SRR1304304](http://www.ncbi.nlm.nih.gov/sra/?term=SRR1304304).
-
-![Biotype overlaps](https://raw.githubusercontent.com/ewels/visualizations/master/examples/SRR1304304_trimmed_aligned_biotypeCounts.png)
-
-![Biotype lengths](https://raw.githubusercontent.com/ewels/visualizations/master/examples/SRR1304304_trimmed_aligned_biotypeLengths.png)
-
-![Biotype length percentages](https://raw.githubusercontent.com/ewels/visualizations/master/examples/SRR1304304_trimmed_aligned_biotypeLengthPercentages.png)
 
 ### Parameters
 
@@ -129,25 +130,46 @@ and finally a Python script which takes this output and plots a graph.
 **Note:** The first two scripts are currently written to work with our setup
 in SciLifeLab, and will require modification to run on different systems.
 
+### Example output
+
+
 ### Step 1: Subsample the BAM files
 ```bash
 bash submit_subsample_jobs.sh *.bam
 ```
 This will set off SLURM sbatch jobs to create 9 subsampled files for each
-input BAM file (10% to 90% in 10% steps).
+input BAM file (10% to 90% in 10% steps). A soft-link is created for the
+original file so that there is a file for the 100% step.
+
+The script will check for existing files and skip that step if the target
+file already exists. As such, if some jobs fail you can run the script
+again to fill in the gaps.
 
 #### Parameters
-Output directory can be specified using `-o <output directory>`.
+Command Line Flag | Description
+----------------- | ------------
+`-l` | Directory for log files. Default: `./logs/`
+`-o` | Directory for output. Default: `./downsampled/`
 
 ### Step 2: Cufflinks analysis
 Once the subsampling is complete, cufflinks must be run on each file.
 ```bash
 bash submit_cufflinks_jobs.sh -b <fasta reference> -g <gtf reference> *.bam
 ```
-This will create jobs for the cufflinks analysis. 
+This will create jobs for the cufflinks analysis. As with the subsampling
+script, the script will check for existing files and any where the target
+file already exists. As such, if some jobs fail you can run the script
+again to fill in the gaps.
 
 #### Parameters
-Again, the output directory can be specified using `-o <output directory>`.
+Command Line Flag | Description
+----------------- | ------------
+`-b` | FASTA reference file. Required.
+`-g` | GTF reference file. Required.
+`-l` | Directory for log files. Default: `./logs/`
+`-o` | Directory for output. Default: `./cufflinks/`
+`-n` | Number of cores to use. Default: `1`
+
 
 ### Step 3: Plotting
 Finally, submit the directories of the completed cufflinks analysis to the
@@ -166,9 +188,37 @@ sampleTwo_0.1/
 ..
 sampleTwo_1.0/
 ````
-#### Parameters
+Next, it will go through the directories looking for a file called
+`genes.fpkm_tracking`. It will open this and loop through each line (each
+gene) and count those where the FPKM is greater than the specified threshold
+(default: `0`).
 
-### Example output
+If a cufflinks log directory is specified with `-c`, the script will attempt
+to identify the log files and take the read counts printed here. This will
+be used for the plot x axis.
+
+Finally, the script creates a plot using the proportions as the x axis.
+
+The functions within the script can be used as a python library, though
+be warned that the script assumes that the input files use the structure
+defined in the previous two bash scripts.
+From within a python script:
+
+```python
+import plot_observed_genes
+plot_observed_genes.plot_observed_genes(input_dirs)
+```
+
+#### Parameters
+Command Line Flag | `plot_observed_genes()` argument name | Description
+----------------- | -------------------- | -----------
+`<input directories>` | `input_dirs` | Required.<br>List of cufflinks results directories
+`-f`, `--fpkm-cutoff` | `fpkm_cutoff` | Default: `0`<br> Cutoff at which to count genes as observed.
+`-c`, `--logdir` | `log_dir` | Default: `None`<br> Directory containing cufflinks log files. Read counts from log files will be used for x axis instead of percentages.
+`-o`, `--output` | `output_fn` | Default: `gene_counts`<br>Plot output filename base. Default: `gene_counts.png` / `.pdf`
+`-l`, `--log` | `log_level` | Default: `info`<br>Level of log messages to display. Can be `debug`, `info` or `warning`.
+`-u`, `--log-output` | `log_output` | Default: `stdout`<br>Log output filename.
+
 ### Dependencies
 The scripts are written in bash and Python.
 [Picard](http://picard.sourceforge.net/)
@@ -178,11 +228,11 @@ two steps.
 The following Python libraries are required:
 
 * [matplotlib](http://matplotlib.org/)
-* [numpy](http://www.numpy.org/) **is it?**
 * argparse
 * collections (defaultdict)
 * logging
 * os
+* re
 
 
 
@@ -207,17 +257,20 @@ help to choose an appropriate cut-off.
 Additional options allow you to interrogate coverage on different reference
 strands and within regions of interest, as specified by a BED file.
 
-### Usage
-
-	bismark_coverage_curves.pl <coverage_file.cov>
-
-For nicer fonts, download the [OpenSans-Regular.ttf](https://github.com/ewels/visualizations/raw/master/OpenSans-Regular.ttf)
-font into the same directory as the script. Font is from [Google Fonts](https://www.google.com/fonts/specimen/Open+Sans).
-
 ### Example Output
 ![Bismark Coverage Curves Plot](https://raw.githubusercontent.com/ewels/visualizations/master/examples/coverageStats.png)
 
 See additional [text output](https://raw.githubusercontent.com/ewels/visualizations/master/examples/coverageStats.txt)
+
+
+### Usage
+
+```bash
+perl bismark_coverage_curves.pl <coverage_file.cov>
+```
+
+For nicer fonts, download the [OpenSans-Regular.ttf](https://github.com/ewels/visualizations/raw/master/OpenSans-Regular.ttf)
+font into the same directory as the script. Font is from [Google Fonts](https://www.google.com/fonts/specimen/Open+Sans).
 
 ### Parameters
 
@@ -273,13 +326,6 @@ be considered, the number of different cytosines passing the coverage
 threshold for a window to be counted as well as restricting the 
 windows to those overlapping regions of interest, as specified by a BED file.
 
-### Usage
-
-	bismark_window_sizes.pl <coverage_file.cov>
-
-For nicer fonts, download the [OpenSans-Regular.ttf](https://github.com/ewels/visualizations/raw/master/OpenSans-Regular.ttf)
-font into the same directory as the script. Font is from [Google Fonts](https://www.google.com/fonts/specimen/Open+Sans).
-
 ### Example Output
 ![Bismark Window Sizes Plot](https://raw.githubusercontent.com/ewels/visualizations/master/examples/windowSizes_wholeGenome.png)
 
@@ -287,6 +333,14 @@ font into the same directory as the script. Font is from [Google Fonts](https://
 
 See additional text output: [first plot](https://raw.githubusercontent.com/ewels/visualizations/master/examples/windowSizes_wholeGenome.txt), [second plot](https://raw.githubusercontent.com/ewels/visualizations/master/examples/windowSizes_roi.txt)
 
+### Usage
+
+```bash
+perl bismark_window_sizes.pl <coverage_file.cov>
+```
+
+For nicer fonts, download the [OpenSans-Regular.ttf](https://github.com/ewels/visualizations/raw/master/OpenSans-Regular.ttf)
+font into the same directory as the script. Font is from [Google Fonts](https://www.google.com/fonts/specimen/Open+Sans).
 
 ### Parameters
 
