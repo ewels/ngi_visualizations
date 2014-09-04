@@ -21,7 +21,6 @@ from __future__ import print_function
 import argparse
 from collections import defaultdict
 import logging
-import numpy
 import os
 import re
 
@@ -30,18 +29,28 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-def plot_observed_genes (input_dirs, output_fn='gene_counts.png', counts_fn=None):
+def plot_observed_genes (input_dirs, fpkm_cutoff=0, output_fn='gene_counts', log_dir=None):
     """
     Main function. Takes input files and makes a plot.
     """
     # Parse the directory names
     samples = parse_input_dirnames(input_dirs)
     
-    # Find the counts
-    counts = count_cufflinks_observed_genes(samples)
+    # Find the gene counts
+    gene_counts = count_cufflinks_observed_genes(samples, fpkm_cutoff)
+    
+    # Try to find read counts if we have the cufflinks logs
+    if log_dir is not None:
+        read_counts = get_read_counts_cufflinks_log(log_dir, samples)
+    else:
+        read_counts = None
     
     # Plot the counts
-    filenames = plot_gene_counts(counts)
+    filenames = plot_gene_counts(gene_counts, fpkm_cutoff, read_counts, output_fn)
+    
+    # Plot the proportions if we have done read counts already
+    if read_counts is not None:
+        proportion_filenames = plot_gene_counts(gene_counts, fpkm_cutoff, None, "{}_proportions".format(output_fn))
     
     
     
@@ -59,11 +68,10 @@ def parse_input_dirnames (input_dirs):
     # Go through directories
     samples = defaultdict(lambda: defaultdict(str))
     re_pattern = re.compile('^(.*)_([\d\.]+)$')
-    for dirname in input_dirs:
+    for dirname in sorted(input_dirs):
         # check that we're a dir and that we exists
         if not os.path.isdir(dirname):
             if os.path.exists(dirname):
-                
                 raise IOError("Fatal error - not a directory: {}".format(dirname))
             else:
                 raise IOError("Fatal error - can't find input directory: {}".format(dirname))
@@ -92,7 +100,7 @@ def parse_input_dirnames (input_dirs):
     logging.info("Found {} samples..".format(len(samples)))
     return samples
     
-def count_cufflinks_observed_genes (samples):
+def count_cufflinks_observed_genes (samples, fpkm_cutoff=0):
     """
     Reads cufflinks genes.fpkm_tracking files and counts the number of
     genes with FPKM > 1
@@ -103,11 +111,12 @@ def count_cufflinks_observed_genes (samples):
     Output: Nested dict with same structure, but values as gene count
     """
     
+    fpkm_cutoff = float(fpkm_cutoff)
+    
     counts = defaultdict(lambda: defaultdict(int))
-    for sample in samples:
+    for sample in sorted(samples):
         logging.info("Processing {}".format(sample))
         for proportion in sorted(samples[sample]):
-            logging.debug("  ..proportion {}".format(proportion))
             counts[sample][proportion] = 0
             file = samples[sample][proportion]
             if os.path.isfile(file):
@@ -120,7 +129,7 @@ def count_cufflinks_observed_genes (samples):
                             line = line.strip()
                             cols = line.split("\t")
                             FPKM = cols[9]
-                            if float(FPKM) > 1:
+                            if float(FPKM) > fpkm_cutoff:
                                 counts[sample][proportion] += 1
                 except IOError as e:
                     logging.error("Error loading cufflinks input file: {}".format(file))
@@ -128,13 +137,65 @@ def count_cufflinks_observed_genes (samples):
             else:
                 raise IOError("Couldn't find cufflinks input file: {}".format(file))
             
-            logging.info("{} - {} = {}".format(sample, proportion, counts[sample][proportion]))
+            logging.info("  ..{} = {}".format(proportion, counts[sample][proportion]))
     
     return counts
 
 
+def get_read_counts_cufflinks_log (log_dir, samples):
+    
+    read_counts = defaultdict(lambda: defaultdict(int))
+    log_dir = os.path.realpath(log_dir)
+    count_regex = re.compile('^Processed (\d+) loci.$')
+    
+    err_suff = "\nWill use percentages instead of read counts..\n"
+    
+    # Check that the logs directory exists
+    if not os.path.isdir(log_dir):
+        if os.path.exists(log_dir):
+            logging.error("Error - cufflinks log path is not a directory: {}{}".format(log_dir, err_suff))
+            return None
+        else:
+            logging.error("Fatal error - can't find cufflinks log directory: {}{}".format(log_dir, err_suff))
+            return None
+    
+    # Loop through the sample names looking for the corresponding log files
+    for sample in samples:
+        for proportion in samples[sample]:
+            
+            # Build the filename
+            log_fn = "{}_{}_cufflinks.log".format(sample, proportion)
+            log_path = os.path.join(log_dir, log_fn)
+            
+            # Check it exists
+            if not os.path.isfile(log_path):
+                logging.error("Error - could not find cufflinks log file: {}{}".format(log_path, err_suff))
+                return None
+            
+            # Parse the log file
+            try:
+                with open(log_path, 'r') as fh:
+                    # Run through the file - we only want the last line
+                    for line in fh:
+                        pass
+                    # Parse the final line to get the counts
+                    m = count_regex.match(line.strip())
+                    if m is not None:
+                        read_counts[sample][proportion] = m.group(1)
+                    else:
+                        logging.error("Error - couldn't find read count in final line: {}{}".format(line, err_suff))
+                        return None
+                    
+            except IOError as e:
+                logging.error("Error - could not find cufflinks log file: {}\n{}{}".format(log_path, e, err_suff))
+                return None
+    
+    # We got this far! Everything must have gone well.
+    return read_counts
 
-def plot_gene_counts (counts, title="Subsampled Gene Discovery Rates"):
+
+
+def plot_gene_counts (counts, fpkm_cutoff, read_counts=None, output_fn='gene_counts'):
     """
     Plots line graph of numbers of genes with FPKM > 1 at increasing subsampling
     levels, using matplotlib pyplot
@@ -152,35 +213,48 @@ def plot_gene_counts (counts, title="Subsampled Gene Discovery Rates"):
                 '#fdbf6f','#ff7f00','#cab2d6','#6a3d9a','#ffff99','#b15928']*10
     
     i = 0
-    for sample in counts:
+    min_x = 999999999
+    max_x = 0
+    for sample in sorted(counts):
         
-        proportions = [0]
-        gene_counts = [0]
+        x_axis_values = []
+        gene_counts = []
         
-        for p in sorted(counts[sample]):
-            gene_counts.append(counts[sample][p])
-            proportions.append(p)
-        
-        axes.plot(proportions, gene_counts, color=colours[i], label=sample)
+        for proportion in sorted(counts[sample]):
+            gene_counts.append(counts[sample][proportion])
+            if read_counts is not None:
+                x_axis_values.append(int(read_counts[sample][proportion]))
+            else:
+                x_axis_values.append(float(proportion))
+            min_x = min(min_x, min(x_axis_values))
+            max_x = max(max_x, max(x_axis_values))
+        axes.plot(x_axis_values, gene_counts, label=sample, color=colours[i], marker="x", markersize=3)
         i += 1
     
     # Tidy axes
-    axes.set_xlim(0,1)
+    axes.set_xlim(min_x, max_x)
     axes.grid(True, zorder=0, which='both', axis='y', linestyle='-', color='#EDEDED', linewidth=1)
     axes.set_axisbelow(True)
     axes.tick_params(which='both', labelsize=8, direction='out', top=False, right=False)
     
+    # Make x axis proportions a percentage scale
+    if read_counts is None:
+        axes.set_xticklabels(["%d%%" % (z*100) for z in axes.get_xticks()])
+    
     # Labels
-    plt.xlabel('Proportion of sample')
-    plt.ylabel('Number of genes with FPKM > 1')
-    plt.title(title)
+    if read_counts is None:
+        plt.xlabel('Proportion of sample')
+    else:
+        plt.xlabel('Subsampled Read Counts')
+    plt.ylabel("Number of genes with FPKM > {}".format(fpkm_cutoff))
+    plt.title('Subsampled Gene Observations')
 
     # Legend
-    axes.legend(loc='upper left', bbox_to_anchor = (1.02, 1.02), fontsize=8)
+    axes.legend(loc='upper left', bbox_to_anchor = (1.02, 1.02), fontsize=8, markerscale=0)
     
     # SAVE OUTPUT
-    png_fn = "GeneCounts.png".format(sample)
-    pdf_fn = "GeneCounts.pdf".format(sample)
+    png_fn = "{}.png".format(output_fn)
+    pdf_fn = "{}.pdf".format(output_fn)
     logging.info("Saving to {} and {}".format(png_fn, pdf_fn))
     plt.savefig(png_fn)
     plt.savefig(pdf_fn)
@@ -194,10 +268,12 @@ def plot_gene_counts (counts, title="Subsampled Gene Discovery Rates"):
 if __name__ == "__main__":
     # Command line arguments
     parser = argparse.ArgumentParser("Plot number of observed genes at increasing read depths")
-    parser.add_argument("-c", "--counts", dest="counts_fn", default=None,
-                        help="Filename of counts file to use for x axis instead of proportions. See README for further info.")
-    parser.add_argument("-o", "--output", dest="output_fn", default='gene_counts.png',
-                        help="Plot output filename. Default: gene_counts.png")
+    parser.add_argument("-f", "--fpkm-cutoff", dest="fpkm_cutoff", default=0,
+                        help="Cutoff at which to count genes as observed. Default: 0")
+    parser.add_argument("-c", "--logdir", dest="log_dir", default=None,
+                        help="Directory containing cufflinks log files. Read counts will be used for x axis instead of percentages. See README for further info.")
+    parser.add_argument("-o", "--output", dest="output_fn", default='gene_counts',
+                        help="Plot output filename base. Default: gene_counts.png / .pdf")
     parser.add_argument("-l", "--log", dest="log_level", default='info', choices=['debug', 'info', 'warning'],
                         help="Level of log messages to display")
     parser.add_argument("-u", "--log-output", dest="log_output", default='stdout',
