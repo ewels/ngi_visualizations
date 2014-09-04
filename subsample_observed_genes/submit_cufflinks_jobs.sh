@@ -8,10 +8,12 @@
 
 # print_usage()
 function print_usage { echo -e  "\nUsage:\t$0\n" \
+                                "\t\t[-b <FASTA reference>]\n" \
                                 "\t\t[-g <GTF reference>]\n" \
-                                "\t\t[-o <output_directory>]\n" \
+                                "\t\t[-l <log directory>]\n" \
+                                "\t\t[-o <output directory>]\n" \
                                 "\t\t[-n <cores>]\n" \
-                                "\t\t<aligned_bam_file> [<additional_bam_files>]\n" >&2 ;
+                                "\t\t<aligned bam file> [<additional bam files>]\n" >&2 ;
                      }
 
 # extension_is_bam()
@@ -68,13 +70,13 @@ function cufflinks_job() {
 # GET INPUT
 while getopts ":b:g:l:o:n:h" opt; do
     case $opt in
-         b)
+        b)
             FA_REF=$OPTARG
             ;;
-         g)
+        g)
             GTF_FILE=$OPTARG
             ;;
-         l)
+        l)
             LOG_DIR=$OPTARG
             ;;
         o)

@@ -8,9 +8,9 @@
 
 # print_usage()
 function print_usage { echo -e  "\nUsage:\t$0\n" \
-                                "\t\t[-o <output_directory>]\n" \
-                                "\t\t[-n <cores>]\n" \
-                                "\t\t<aligned_bam_files> [<additional_bam_files>]\n" >&2 ;
+                                "\t\t[-l <output directory>]\n" \
+                                "\t\t[-o <log directory>]\n" \
+                                "\t\t<aligned bam files> [<additional bam files>]\n" >&2 ;
                      }
 
 # extension_is_bam()
@@ -51,31 +51,28 @@ function picard_downsample_job() {
         CL="java -Xmx2g -jar /sw/apps/bioinfo/picard/1.118/milou/DownsampleSam.jar INPUT=$INPUT_PATH OUTPUT=$OUTPUT PROBABILITY=$PROBABILITY"
         echo -e "\nINFO:\t\tSubmitting bash job with picard tools command line:\n\t\t$CL" 1>&2
         
-        SB="sbatch -p core -n $NUM_CORES --open-mode=append -o $LOGFILE -J $JID -A b2013064 -t 1:00:00 --wrap=\"$CL\""
+        SB="sbatch -p core -n 1 --open-mode=append -o $LOGFILE -J $JID -A b2013064 -t 1:00:00 --wrap=\"$CL\""
         # echo -e "\nINFO:\t\tJob submit command:\n\t\t$SB" 1>&2
         
         eval $SB 1>&2
         if [[ ! $? -eq 0 ]]; then
-            echo -e "\nWARNING:\tJob submission failed for input file \"$INPUT_BN\", subsample $PROBABILITY" 1>&2
+            echo -e "\nWARNING:\tJob submission failed for input file $INPUT_BN, subsample $PROBABILITY" 1>&2
             return 1
         fi
     else
-        echo -e "WARNING:\tOutput file \"$OUTPUT\" already exists. Skipping job submission..." 1>&2
+        echo -e "WARNING:\tOutput file $OUTPUT already exists. Skipping job submission..." 1>&2
         return 1
     fi
 }
 
 # GET INPUT
-while getopts ":l:o:n:h" opt; do
+while getopts ":l:o:h" opt; do
     case $opt in
          l)
             LOG_DIR=$OPTARG
             ;;
         o)
             OUTPUT_DIR=$OPTARG
-            ;;
-        n)
-            NUM_CORES=$OPTARG
             ;;
         h)
             print_usage
@@ -93,9 +90,6 @@ while getopts ":l:o:n:h" opt; do
             ;;
     esac
 done
-
-# CONSTANTS 
-[[ $SLURM_CPUS_ON_NODE ]] && SYS_CORES=$SLURM_CPUS_ON_NODE || SYS_CORES=$(nproc --all)
 
 # VERIFY LOG DIRECTORY
 if [[ ! $LOG_DIR ]]; then
@@ -119,22 +113,6 @@ if [[ ! $(mkdir -p $OUTPUT_DIR) -eq 0 ]]; then
     exit 1
 fi
 
-# DETERMINE THE NUMBER OF CORES TO USE
-if [[ ! $NUM_CORES ]]; then
-    echo -e "INFO:\t\tNumber of cores not specified; setting to 1." 1>&2
-    NUM_CORES=1
-else
-    if [[ $NUM_CORES =~ ^[0-9]+$ ]]; then
-        if [[ $NUM_CORES -gt $SYS_CORES ]]; then
-           echo -e "WARNING:\tNumber of cores specified ($NUM_CORES) greater than number of cores available ($SYS_CORES). Setting to maximum $SYS_CORES." 1>&2
-           NUM_CORES=$SYS_CORES
-        fi
-    else
-        echo -e "WARNING:\tNumber of cores must be a positive integer between 1 and $SYS_CORES. Setting number of cores to 1." 1>&2
-       NUM_CORES=1
-    fi
-fi
-
 # Load our required environment modules
 module load bioinfo-tools
 module load picard/1.118
@@ -143,6 +121,8 @@ module load picard/1.118
 for (( i=$OPTIND; i <= ${#@}; i++ )) {
     
     FN="${@:$i:1}"
+    echo -e "INFO:\t\tFile ${i} of ${#@} - ${FN}" 1>&2
+    
     # Can we read this input file?
     if [[ ! $( exists_is_readable $FN) ]]; then
         echo -e "ERROR:\t\tSkipping file \"$FN\": "$FILE_NOT_EXISTS_OR_NOT_READABLE_ERROR_TEXT 1>&2
@@ -156,18 +136,21 @@ for (( i=$OPTIND; i <= ${#@}; i++ )) {
     fi
     
     # Set off subsampling jobs
-    for i in {1..9}
-    do
-        j="0"$(echo "$i/10" | bc -l | cut -c 1-2)
-        if [[ $( picard_downsample_job $FN $j) ]]; then
-            echo -e "ERROR:\t\tPicard job submission failed: \"$FN\" probability $j" 1>&2
+    for j in {1..9}; do
+        k="0"$(echo "$i/10" | bc -l | cut -c 1-2)
+        if [[ $( picard_downsample_job $FN $k) ]]; then
+            echo -e "ERROR:\t\tPicard job submission failed: \"$FN\" probability $k" 1>&2
         fi
     done
     
     # Create a link in the output directory for the full file
-    SLINK="$OUTPUT_DIR/${INPUT}_1.0.bam"
-    SLINK=$(readlink -m $LINK)
-    ln -s $FN $SLINK
+    SLINK=${FN##*/}
+    SLINK="$OUTPUT_DIR/${SLINK%.bam}_1.0.bam"
+    if [[ ! -e $SLINK ]]; then
+        ln -s $(readlink -m $FN) $SLINK
+    else
+        echo -e "WARNING:\tOutput file $SLINK already exists. Skipping soft link creation..." 1>&2
+    fi
     
 }
 
