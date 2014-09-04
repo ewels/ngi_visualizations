@@ -5,7 +5,7 @@ A collection of next-gen sequencing visualisation scripts.
 
 * [Count Biotypes](#count-biotypes)
 	* Uses HTSeq to plot read overlaps with different feature biotype flags
-* [Subsample: Observed Genes](#subsample-observed-genes)
+* [Subsampled Gene Observations](#subsampled-gene-observations)
     * Group of scripts to plot the number of observed genes at varying sample
     subsampling proportions. Can give an impression of library complexity on
     a biological level.
@@ -114,7 +114,7 @@ The script is written in Python. The following libraries are required:
 
 ---------------------------------------------------------------------------
 
-## Subsample: Observed Genes
+## Subsampled Gene Observations
 
 Software such as [Preseq](http://smithlabresearch.org/software/preseq/) can
 show how sequencing library diversity changes with increasing sequencing 
