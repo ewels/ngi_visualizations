@@ -120,7 +120,7 @@ Software such as [Preseq](http://smithlabresearch.org/software/preseq/) can
 show how sequencing library diversity changes with increasing sequencing 
 depth. This tool is an attempt to generate a similar metric using a measurement
 which is more biologically relevant for RNA-Sequencing datasets: the number
-of different genes which have been observed _(FPKM > 1)_.
+of different genes which have been observed _(default: FPKM > 0)_.
 
 The package is comprised of three scripts; one to subsample a set of aligned BAM
 files using [Picard](http://picard.sourceforge.net/command-line-overview.shtml#DownsampleSam);

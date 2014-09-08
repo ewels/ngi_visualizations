@@ -50,11 +50,10 @@ function cufflinks_job() {
     
     if [[ ! -d $OUTPUT ]]; then
         CL="cufflinks --quiet --frag-bias-correct $FA_REF --GTF-guide $GTF_FILE --output-dir $OUTPUT --num-threads $NUM_CORES $INPUT_PATH"
-        echo -e "\nINFO:\t\tSubmitting bash job with picard tools command line:\n\t\t$CL" 1>&2
+        echo -e "\nINFO:\t\tSubmitting bash job with cufflinks command:\n\t\t$CL" 1>&2
         
         # Time limit: 2 days.
         SB="sbatch -p core -n $NUM_CORES --open-mode=append -o $LOGFILE -J cufflinks_$INPUT_BN -A b2013064 -t 2-00 --wrap=\"$CL\""
-        echo -e "\nINFO:\t\tJob submit command:\n\t\t$SB" 1>&2
         
         eval $SB 1>&2
         if [[ ! $? -eq 0 ]]; then

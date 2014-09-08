@@ -49,7 +49,7 @@ function picard_downsample_job() {
     
     if [[ ! -e $OUTPUT ]]; then
         CL="java -Xmx2g -jar /sw/apps/bioinfo/picard/1.118/milou/DownsampleSam.jar INPUT=$INPUT_PATH OUTPUT=$OUTPUT PROBABILITY=$PROBABILITY"
-        echo -e "\nINFO:\t\tSubmitting bash job with picard tools command line:\n\t\t$CL" 1>&2
+        echo -e "\nINFO:\t\tSubmitting bash job with picard tools command:\n\t\t$CL" 1>&2
         
         SB="sbatch -p core -n 1 --open-mode=append -o $LOGFILE -J $JID -A b2013064 -t 1:00:00 --wrap=\"$CL\""
         # echo -e "\nINFO:\t\tJob submit command:\n\t\t$SB" 1>&2

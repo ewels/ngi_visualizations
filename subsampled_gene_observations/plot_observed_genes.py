@@ -21,6 +21,7 @@ from __future__ import print_function
 import argparse
 from collections import defaultdict
 import logging
+import numpy
 import os
 import re
 
@@ -29,7 +30,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-def plot_observed_genes (input_dirs, fpkm_cutoff=0, output_fn='gene_counts', log_dir=None):
+def plot_observed_genes (input_dirs, fpkm_cutoff=0, output_fn='gene_counts', read_counts_fn=None):
     """
     Main function. Takes input files and makes a plot.
     """
@@ -40,19 +41,33 @@ def plot_observed_genes (input_dirs, fpkm_cutoff=0, output_fn='gene_counts', log
     gene_counts = count_cufflinks_observed_genes(samples, fpkm_cutoff)
     
     # Try to find read counts if we have the cufflinks logs
-    if log_dir is not None:
-        read_counts = get_read_counts_cufflinks_log(log_dir, samples)
+    if read_counts_fn is not None:
+        read_counts = get_read_counts(read_counts_fn, samples)
     else:
         read_counts = None
     
-    # Plot the counts
-    filenames = plot_gene_counts(gene_counts, fpkm_cutoff, read_counts, output_fn)
+    # Plot the proportions
+    filenames = plot_gene_counts(gene_counts, fpkm_cutoff, None, "{}_proportions".format(output_fn))
     
-    # Plot the proportions if we have done read counts already
+    # Plot the counts if we have them
     if read_counts is not None:
-        proportion_filenames = plot_gene_counts(gene_counts, fpkm_cutoff, None, "{}_proportions".format(output_fn))
+        proportion_filenames = plot_gene_counts(gene_counts, fpkm_cutoff, read_counts, output_fn)
     
-    
+
+def parse_filename (fn):
+    """
+    Helper function - takes a file name as input and returns a dict with 
+    the sample name and proportion.
+    """
+    re_pattern = re.compile('^(.*)_([\d\.]+)$')
+    m = re_pattern.match(fn)
+    if m is None:
+        return None
+    else:
+        sample = m.group(1)
+        proportion = m.group(2)
+        match = {"sample":sample, "proportion":proportion}
+        return match
     
 def parse_input_dirnames (input_dirs):
     """
@@ -67,7 +82,6 @@ def parse_input_dirnames (input_dirs):
     
     # Go through directories
     samples = defaultdict(lambda: defaultdict(str))
-    re_pattern = re.compile('^(.*)_([\d\.]+)$')
     for dirname in sorted(input_dirs):
         # check that we're a dir and that we exists
         if not os.path.isdir(dirname):
@@ -78,15 +92,13 @@ def parse_input_dirnames (input_dirs):
         # Strip the basename from the path
         dirbase = os.path.basename(dirname)
         # Parse the names and assign to the array
-        m = re_pattern.match(dirbase)
-        if m is None:
+        match = parse_filename(dirbase)
+        if match is None:
             raise Exception("Fatal error - couldn't match the directory name {}".format(dirbase))
         else:
             try:
-                sample = m.group(1)
-                proportion = m.group(2)
                 filename = '{}/genes.fpkm_tracking'.format(os.path.realpath(dirname))
-                samples[sample][proportion] = filename
+                samples[match['sample']][match['proportion']] = filename
             except IndexError as e:
                 logging.error("Fatal error - problem with the directory name matches for {} - {}".
                             format(dirname, e))
@@ -142,55 +154,44 @@ def count_cufflinks_observed_genes (samples, fpkm_cutoff=0):
     return counts
 
 
-def get_read_counts_cufflinks_log (log_dir, samples):
+def get_read_counts (read_counts_fn, samples):
     
     read_counts = defaultdict(lambda: defaultdict(int))
-    log_dir = os.path.realpath(log_dir)
-    count_regex = re.compile('^Processed (\d+) loci.$')
+    read_counts_fn = os.path.realpath(read_counts_fn)
     
-    err_suff = "\nWill use percentages instead of read counts..\n"
+    err_suff = "\nSkipping plot with read counts..\n"
     
     # Check that the logs directory exists
-    if not os.path.isdir(log_dir):
-        if os.path.exists(log_dir):
-            logging.error("Error - cufflinks log path is not a directory: {}{}".format(log_dir, err_suff))
-            return None
-        else:
-            logging.error("Fatal error - can't find cufflinks log directory: {}{}".format(log_dir, err_suff))
-            return None
+    if not os.path.isfile(read_counts_fn):
+        logging.error("Error - can't read read_counts file: {}{}".format(log_dir, err_suff))
+        return None
     
-    # Loop through the sample names looking for the corresponding log files
+    # Read the counts file
+    try:
+        with open(read_counts_fn, 'r') as fh:
+            for line in fh:
+                [fn, reads] = line.split("\t", 1)
+                fn_base = os.path.basename(fn)
+                fn_name = os.path.splitext(fn_base)[0]
+                match = parse_filename(fn_name)
+                if match is not None:
+                    read_counts[match['sample']][match['proportion']] = reads
+                else:
+                    # We check we have everything at the end, don't panic!
+                    continue
+    except IOError as e:
+        logging.error("Error - could not find cufflinks log file: {}\n{}{}".format(log_path, e, err_suff))
+        return None
+    
+    # Loop through the sample names and check we have the reads
     for sample in samples:
         for proportion in samples[sample]:
-            
-            # Build the filename
-            log_fn = "{}_{}_cufflinks.log".format(sample, proportion)
-            log_path = os.path.join(log_dir, log_fn)
-            
-            # Check it exists
-            if not os.path.isfile(log_path):
-                logging.error("Error - could not find cufflinks log file: {}{}".format(log_path, err_suff))
-                return None
-            
-            # Parse the log file
             try:
-                with open(log_path, 'r') as fh:
-                    # Run through the file - we only want the last line
-                    for line in fh:
-                        pass
-                    # Parse the final line to get the counts
-                    m = count_regex.match(line.strip())
-                    if m is not None:
-                        read_counts[sample][proportion] = m.group(1)
-                    else:
-                        logging.error("Error - couldn't find read count in final line: {}{}".format(line, err_suff))
-                        return None
-                    
-            except IOError as e:
-                logging.error("Error - could not find cufflinks log file: {}\n{}{}".format(log_path, e, err_suff))
+                read_counts[sample][proportion]
+            except NameError:
+                logging.error("Error - couldn't find reads for {}, {}{}".format(sample, proportion, err_suff))
                 return None
-    
-    # We got this far! Everything must have gone well.
+            
     return read_counts
 
 
@@ -223,7 +224,7 @@ def plot_gene_counts (counts, fpkm_cutoff, read_counts=None, output_fn='gene_cou
         for proportion in sorted(counts[sample]):
             gene_counts.append(counts[sample][proportion])
             if read_counts is not None:
-                x_axis_values.append(int(read_counts[sample][proportion]))
+                x_axis_values.append(int(read_counts[sample][proportion])/1000000)
             else:
                 x_axis_values.append(float(proportion))
             min_x = min(min_x, min(x_axis_values))
@@ -245,7 +246,8 @@ def plot_gene_counts (counts, fpkm_cutoff, read_counts=None, output_fn='gene_cou
     if read_counts is None:
         plt.xlabel('Proportion of sample')
     else:
-        plt.xlabel('Subsampled Read Counts')
+        matplotlib.rcParams['mathtext.default'] = 'regular'
+        plt.xlabel(r'Subsampled Read Counts ($\times 10^6$)')
     plt.ylabel("Number of genes with FPKM > {}".format(fpkm_cutoff))
     plt.title('Subsampled Gene Observations')
 
@@ -270,8 +272,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser("Plot number of observed genes at increasing read depths")
     parser.add_argument("-f", "--fpkm-cutoff", dest="fpkm_cutoff", default=0,
                         help="Cutoff at which to count genes as observed. Default: 0")
-    parser.add_argument("-c", "--logdir", dest="log_dir", default=None,
-                        help="Directory containing cufflinks log files. Read counts will be used for x axis instead of percentages. See README for further info.")
+    parser.add_argument("-c", "--read-counts", dest="read_counts_fn", default=None,
+                        help="File with read counts, used for x axis. See README for further info.")
     parser.add_argument("-o", "--output", dest="output_fn", default='gene_counts',
                         help="Plot output filename base. Default: gene_counts.png / .pdf")
     parser.add_argument("-l", "--log", dest="log_level", default='info', choices=['debug', 'info', 'warning'],
