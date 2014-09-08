@@ -205,14 +205,14 @@ a read count for each subsample point and use this value on the x axis.
 
 Finally, the script creates a plot using the proportions as the x axis.
 
-Command Line Flag | `plot_observed_genes()` argument name | Description
+Command Line Flag | Description
 ----------------- | -------------------- | -----------
-`<input directories>` | `input_dirs` | Required.<br>List of cufflinks results directories
-`-f`, `--fpkm-cutoff` | `fpkm_cutoff` | Default: `0`<br> Cutoff at which to count genes as observed.
-`-c`, `--read-counts` | `read_counts_fn` | Default: `None`<br> File containing BAM file read counts, used for x axis instead of percentages. See Step 3.
-`-o`, `--output` | `output_fn` | Default: `gene_counts`<br>Plot output filename base. Default: `gene_counts.png` / `.pdf`
-`-l`, `--log` | `log_level` | Default: `info`<br>Level of log messages to display. Can be `debug`, `info` or `warning`.
-`-u`, `--log-output` | `log_output` | Default: `stdout`<br>Log output filename.
+`<input directories>` | Required.<br>List of cufflinks results directories
+`-f`, `--fpkm-cutoff` | Default: `0`<br> Cutoff at which to count genes as observed.
+`-c`, `--read-counts` | Default: `None`<br> File containing BAM file read counts, used for x axis instead of percentages. See Step 3.
+`-o`, `--output` | Default: `gene_counts`<br>Plot output filename base. Default: `gene_counts.png` / `.pdf`
+`-l`, `--log` | Default: `info`<br>Level of log messages to display. Can be `debug`, `info` or `warning`.
+`-u`, `--log-output` | Default: `stdout`<br>Log output filename.
 
 ### Dependencies
 The scripts are written in bash and Python. 
