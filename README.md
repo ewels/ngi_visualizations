@@ -122,10 +122,12 @@ depth. This tool is an attempt to generate a similar metric using a measurement
 which is more biologically relevant for RNA-Sequencing datasets: the number
 of different genes which have been observed _(default: FPKM > 0)_.
 
-The package is comprised of three scripts; one to subsample a set of aligned BAM
-files using [Picard](http://picard.sourceforge.net/command-line-overview.shtml#DownsampleSam);
-one to count the FPKM gene counts using [Cufflinks](http://cufflinks.cbcb.umd.edu/)
-and finally a Python script which takes this output and plots a graph.
+The package is comprised of four scripts which must be run separately:
+
+* `submit_subsample_jobs.sh`: Subsample a set of aligned BAM files using [Picard](http://picard.sourceforge.net/command-line-overview.shtml#DownsampleSam)
+* `submit_cufflinks_jobs.sh`: Count the FPKM gene counts using [Cufflinks](http://cufflinks.cbcb.umd.edu/)
+* `count_aligned_reads.sh`: Count the aligned reads in the subsampled BAM files using [samtools](http://samtools.sourceforge.net/)
+* `plot_observed_genes.py`: A Python script which takes this output and plots a graph.
 
 **Note:** The first two scripts are currently written to work with our setup
 in SciLifeLab, and will require modification to run on different systems.
@@ -145,7 +147,6 @@ The script will check for existing files and skip that step if the target
 file already exists. As such, if some jobs fail you can run the script
 again to fill in the gaps.
 
-#### Parameters
 Command Line Flag | Description
 ----------------- | ------------
 `-l` | Directory for log files. Default: `./logs/`
@@ -161,7 +162,6 @@ script, the script will check for existing files and any where the target
 file already exists. As such, if some jobs fail you can run the script
 again to fill in the gaps.
 
-#### Parameters
 Command Line Flag | Description
 ----------------- | ------------
 `-b` | FASTA reference file. Required.
@@ -176,19 +176,17 @@ read counts (as shown in the example above), you need to count the aligned
 reads in each BAM file. This script uses samtools to count the reads in each
 input and output a tab-delimited file with filename and read count.
 
+**Note**: You can skip this step and just plot the x
+axis as percentages instead of read counts - just omit the `-c` paramter when
+running the plotting script.
+
 ```bash
 bash count_aligned_reads.sh *.bam
 ```
 
-#### Parameters
 Command Line Flag | Description
 ----------------- | ------------
 `-o` | Directory for output file. Default: `./read_counts.txt`
-
-
-**Note**: You can skip this step and just plot the x
-axis as percentages instead of read counts - just omit the `-c` paramter when
-running the plotting script.
 
 ### Step 4: Plotting
 Finally, submit the directories of the completed cufflinks analysis to the
@@ -197,38 +195,16 @@ plotting script:
 python plot_observed_genes.py *_cufflinksAnalysis/
 ```
 The script will parse the directory names, assuming the structure
-`<sample_name>_<subsample_proportion>`, eg:
-```
-sampleOne_0.1/
-sampleOne_0.2/
-..
-sampleOne_1.0/
-sampleTwo_0.1/
-..
-sampleTwo_1.0/
-````
-Next, it will go through the directories looking for a file called
-`genes.fpkm_tracking`. It will open this and loop through each line (each
-gene) and count those where the FPKM is greater than the specified threshold
-(default: `0`).
+`<sample_name>_<subsample_proportion>`. Next, it will go through the
+directories looking for a file called `genes.fpkm_tracking`. It will open
+this and loop through each line (each gene) and count those where the FPKM
+is greater than the specified threshold (default: `0`).
 
-If a cufflinks log directory is specified with `-c`, the script will attempt
-to identify the log files and take the read counts printed here. This will
-be used for the plot x axis.
+If a read counts file is specified with `-c`, the script will attempt to find
+a read count for each subsample point and use this value on the x axis.
 
 Finally, the script creates a plot using the proportions as the x axis.
 
-The functions within the script can be used as a python library, though
-be warned that the script assumes that the input files use the structure
-defined in the previous two bash scripts.
-From within a python script:
-
-```python
-import plot_observed_genes
-plot_observed_genes.plot_observed_genes(input_dirs)
-```
-
-#### Parameters
 Command Line Flag | `plot_observed_genes()` argument name | Description
 ----------------- | -------------------- | -----------
 `<input directories>` | `input_dirs` | Required.<br>List of cufflinks results directories
@@ -239,10 +215,11 @@ Command Line Flag | `plot_observed_genes()` argument name | Description
 `-u`, `--log-output` | `log_output` | Default: `stdout`<br>Log output filename.
 
 ### Dependencies
-The scripts are written in bash and Python.
-[Picard](http://picard.sourceforge.net/)
-and [Cufflinks](http://cufflinks.cbcb.umd.edu/) must be installed for the first
-two steps.
+The scripts are written in bash and Python. 
+[Picard](http://picard.sourceforge.net/),
+[Cufflinks](http://cufflinks.cbcb.umd.edu/) and
+[samtools](http://samtools.sourceforge.net/) must be installed for the first
+three steps.
 
 The following Python libraries are required:
 
