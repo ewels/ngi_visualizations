@@ -131,7 +131,7 @@ and finally a Python script which takes this output and plots a graph.
 in SciLifeLab, and will require modification to run on different systems.
 
 ### Example output
-
+![Subsampled gene observations](https://raw.githubusercontent.com/ewels/visualizations/master/examples/subsampled_gene_observations.png)
 
 ### Step 1: Subsample the BAM files
 ```bash
@@ -170,8 +170,27 @@ Command Line Flag | Description
 `-o` | Directory for output. Default: `./cufflinks/`
 `-n` | Number of cores to use. Default: `1`
 
+### Step 3: Count Reads _(optional)_
+If you would like the plot the number of detected genes versus actual subsampled
+read counts (as shown in the example above), you need to count the aligned
+reads in each BAM file. This script uses samtools to count the reads in each
+input and output a tab-delimited file with filename and read count.
 
-### Step 3: Plotting
+```bash
+bash count_aligned_reads.sh *.bam
+```
+
+#### Parameters
+Command Line Flag | Description
+----------------- | ------------
+`-o` | Directory for output file. Default: `./read_counts.txt`
+
+
+**Note**: You can skip this step and just plot the x
+axis as percentages instead of read counts - just omit the `-c` paramter when
+running the plotting script.
+
+### Step 4: Plotting
 Finally, submit the directories of the completed cufflinks analysis to the
 plotting script:
 ```bash
@@ -214,7 +233,7 @@ Command Line Flag | `plot_observed_genes()` argument name | Description
 ----------------- | -------------------- | -----------
 `<input directories>` | `input_dirs` | Required.<br>List of cufflinks results directories
 `-f`, `--fpkm-cutoff` | `fpkm_cutoff` | Default: `0`<br> Cutoff at which to count genes as observed.
-`-c`, `--logdir` | `log_dir` | Default: `None`<br> Directory containing cufflinks log files. Read counts from log files will be used for x axis instead of percentages.
+`-c`, `--read-counts` | `read_counts_fn` | Default: `None`<br> File containing BAM file read counts, used for x axis instead of percentages. See Step 3.
 `-o`, `--output` | `output_fn` | Default: `gene_counts`<br>Plot output filename base. Default: `gene_counts.png` / `.pdf`
 `-l`, `--log` | `log_level` | Default: `info`<br>Level of log messages to display. Can be `debug`, `info` or `warning`.
 `-u`, `--log-output` | `log_output` | Default: `stdout`<br>Log output filename.
