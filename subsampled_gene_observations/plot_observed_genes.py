@@ -85,24 +85,14 @@ def parse_input_dirnames (input_dirs):
     for dirname in sorted(input_dirs):
         # check that we're a dir and that we exists
         if not os.path.isdir(dirname):
-            if os.path.exists(dirname):
-                raise IOError("Fatal error - not a directory: {}".format(dirname))
-            else:
-                raise IOError("Fatal error - can't find input directory: {}".format(dirname))
-        # Strip the basename from the path
-        dirbase = os.path.basename(dirname)
-        # Parse the names and assign to the array
-        match = parse_filename(dirbase)
-        if match is None:
-            raise Exception("Fatal error - couldn't match the directory name {}".format(dirbase))
-        else:
-            try:
-                filename = '{}/genes.fpkm_tracking'.format(os.path.realpath(dirname))
-                samples[match['sample']][match['proportion']] = filename
-            except IndexError as e:
-                logging.error("Fatal error - problem with the directory name matches for {} - {}".
-                            format(dirname, e))
-                raise IndexError(e)
+            raise IOError("Fatal error - can't find input directory: {}".format(dirname))
+        # Try the pattern matching
+        try:
+            filename = '{}/genes.fpkm_tracking'.format(os.path.realpath(dirname))
+            match = parse_filename(os.path.basename(dirname))
+            samples[match['sample']][match['proportion']] = filename
+        except IndexError:
+            raise IOError("Fatal error - couldn't match the directory name {}".format(dirbase))
     
     # Check that we have some samples
     if len(samples) == 0:
