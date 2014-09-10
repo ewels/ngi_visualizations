@@ -5,6 +5,10 @@ A collection of next-gen sequencing visualisation scripts.
 
 * [Count Biotypes](#count-biotypes)
 	* Uses HTSeq to plot read overlaps with different feature biotype flags
+* [Subsampled Gene Observations](#subsampled-gene-observations)
+    * Group of scripts to plot the number of observed genes at varying sample
+    subsampling proportions. Can give an impression of library complexity on
+    a biological level.
 * Bismark Addons
 	* [Bismark Coverage Curves](#bismark-coverage-curves) - Plots the proportion of cytosines meeting increasing coverage thresholds
 	* [Bismark Window Sizes](#bismark-window-sizes) - Plots the proportion of windows passing observation thresholds with increasing window sizes
@@ -32,6 +36,17 @@ are overlapped and how these overlaps are distributed throughout different
 alignment lengths.
 
 The script is written in Python and can be run on the command line or imported into another python script. Overlaps are measured using the [HTSeq library](http://www-huber.embl.de/users/anders/HTSeq/).
+
+### Example output
+The following plots were generated from a Total Small RNA run in Human cells,
+accession [SRR1304304](http://www.ncbi.nlm.nih.gov/sra/?term=SRR1304304).
+
+![Biotype overlaps](https://raw.githubusercontent.com/ewels/visualizations/master/examples/SRR1304304_trimmed_aligned_biotypeCounts.png)
+
+![Biotype lengths](https://raw.githubusercontent.com/ewels/visualizations/master/examples/SRR1304304_trimmed_aligned_biotypeLengths.png)
+
+![Biotype length percentages](https://raw.githubusercontent.com/ewels/visualizations/master/examples/SRR1304304_trimmed_aligned_biotypeLengthPercentages.png)
+
 
 ### Usage
 
@@ -64,31 +79,21 @@ search pattern and a replacement label (tab separated). Search wildcards can be
 included by using an asterisk (`*`). Multiple search strings can be given the
 same biotype label to manually group biotypes together.
 
-### Example output
-The following plots were generated from a Total Small RNA run in Human cells,
-accession [SRR1304304](http://www.ncbi.nlm.nih.gov/sra/?term=SRR1304304).
-
-![Biotype overlaps](https://raw.githubusercontent.com/ewels/visualizations/master/examples/SRR1304304_trimmed_aligned_biotypeCounts.png)
-
-![Biotype lengths](https://raw.githubusercontent.com/ewels/visualizations/master/examples/SRR1304304_trimmed_aligned_biotypeLengths.png)
-
-![Biotype length percentages](https://raw.githubusercontent.com/ewels/visualizations/master/examples/SRR1304304_trimmed_aligned_biotypeLengthPercentages.png)
-
 ### Parameters
 
 Arguments shown in order received by `count_biotypes()`.
 
 Command Line Flag | `count_biotypes()` argument name | Description
 ----------------- | -------------------- | -----------
-`--genome-feature-file`, `-g` | `annotation_file` | Required.<br>Path to annotation file.
+`-g`, `--genome-feature-file` | `annotation_file` | Required.<br>Path to annotation file.
 `<input_bam_list>` | `input_bam_list` | Required.<br>List of paths to aligned BAM files.
-`--biotype-flag`, `-b` | `biotype_flag` | Default: `gene_type` (will also look for any flag containing `biotype`).<br>Name of annotation flag to collect biotype label from.
-`--genome-feature`, `-t` | `feature_type` | Default: `exon`.<br>Type of feature to inspect within GTF file.
-`--num-lines`, `-n` | `num_lines` | Default: 10 million.<br>Number of lines to read from aligned BAM file.
-`--no-overlap`, `-o` | `no_overlap` | Default: False.<br>Include features with no feature overlap in plots.
-`--cols`, `-c` | `equidistant_cols` | Default: False.<br>Plot graphs using equidistant colours to prevent duplicated label colours.
-`--log`, `-l` | `log_level` | Default: info.<br>Specify the level of logging: debug, info or warning.
-`--log-output`, `-u` | `log_output` | Default: stdout.<br>Log output filename.
+`-t`, `--genome-feature` | `feature_type` | Default: `exon`.<br>Feature type for transcribed regions (for which biotypes will be counted).
+`-b`, `--biotype-flag` | `biotype_flag` | Default: `gene_type` (will also look for any flag containing `biotype`).<br>Name of annotation flag to collect biotype label from.
+`-n`, `--num-lines` | `num_lines` | Default: 10 million.<br>Number of lines to read from aligned BAM file.
+`-o`, `--no-overlap` | `no_overlap` | Default: False.<br>Include features with no feature overlap in plots.
+`-c`, `--cols` | `equidistant_cols` | Default: False.<br>Plot graphs using equidistant colours to prevent duplicated label colours.
+`-l`, `--log` | `log_level` | Default: info.<br>Specify the level of logging: debug, info or warning.
+`-u`, `--log-output` | `log_output` | Default: stdout.<br>Log output filename.
 
 ### Dependencies
 
@@ -101,6 +106,126 @@ The script is written in Python. The following libraries are required:
 * collections (defaultdict)
 * logging
 * os
+
+
+---------------------------------------------------------------------------
+
+## Subsampled Gene Observations
+
+Software such as [Preseq](http://smithlabresearch.org/software/preseq/) can
+show how sequencing library diversity changes with increasing sequencing 
+depth. This tool is an attempt to generate a similar metric using a measurement
+which is more biologically relevant for RNA-Sequencing datasets: the number
+of different genes which have been observed _(default: FPKM > 0)_.
+
+The package is comprised of four scripts which must be run separately:
+
+* `submit_subsample_jobs.sh`: Subsample a set of aligned BAM files using [Picard](http://picard.sourceforge.net/command-line-overview.shtml#DownsampleSam)
+* `submit_cufflinks_jobs.sh`: Count the FPKM gene counts using [Cufflinks](http://cufflinks.cbcb.umd.edu/)
+* `count_aligned_reads.sh`: Count the aligned reads in the subsampled BAM files using [samtools](http://samtools.sourceforge.net/)
+* `plot_observed_genes.py`: A Python script which takes this output and plots a graph.
+
+**Note:** The first two scripts are currently written to work with our setup
+in SciLifeLab, and will require modification to run on different systems.
+
+### Example output
+![Subsampled gene observations](https://raw.githubusercontent.com/ewels/visualizations/master/examples/subsampled_gene_observations.png)
+
+### Step 1: Subsample the BAM files
+```bash
+bash submit_subsample_jobs.sh *.bam
+```
+This will set off SLURM sbatch jobs to create 9 subsampled files for each
+input BAM file (10% to 90% in 10% steps). A soft-link is created for the
+original file so that there is a file for the 100% step.
+
+The script will check for existing files and skip that step if the target
+file already exists. As such, if some jobs fail you can run the script
+again to fill in the gaps.
+
+Command Line Flag | Description
+----------------- | ------------
+`-l` | Directory for log files. Default: `./logs/`
+`-o` | Directory for output. Default: `./downsampled/`
+
+### Step 2: Cufflinks analysis
+Once the subsampling is complete, cufflinks must be run on each file.
+```bash
+bash submit_cufflinks_jobs.sh -b <fasta reference> -g <gtf reference> *.bam
+```
+This will create jobs for the cufflinks analysis. As with the subsampling
+script, the script will check for existing files and any where the target
+file already exists. As such, if some jobs fail you can run the script
+again to fill in the gaps.
+
+Command Line Flag | Description
+----------------- | ------------
+`-b` | FASTA reference file. Required.
+`-g` | GTF reference file. Required.
+`-l` | Directory for log files. Default: `./logs/`
+`-o` | Directory for output. Default: `./cufflinks/`
+`-n` | Number of cores to use. Default: `1`
+
+### Step 3: Count Reads _(optional)_
+If you would like the plot the number of detected genes versus actual subsampled
+read counts (as shown in the example above), you need to count the aligned
+reads in each BAM file. This script uses samtools to count the reads in each
+input and output a tab-delimited file with filename and read count.
+
+**Note**: You can skip this step and just plot the x
+axis as percentages instead of read counts - just omit the `-c` paramter when
+running the plotting script.
+
+```bash
+bash count_aligned_reads.sh *.bam
+```
+
+Command Line Flag | Description
+----------------- | ------------
+`-o` | Directory for output file. Default: `./read_counts.txt`
+
+### Step 4: Plotting
+Finally, submit the directories of the completed cufflinks analysis to the
+plotting script:
+```bash
+python plot_observed_genes.py *_cufflinksAnalysis/
+```
+The script will parse the directory names, assuming the structure
+`<sample_name>_<subsample_proportion>`. Next, it will go through the
+directories looking for a file called `genes.fpkm_tracking`. It will open
+this and loop through each line (each gene) and count those where the FPKM
+is greater than the specified threshold (default: `0`).
+
+If a read counts file is specified with `-c`, the script will attempt to find
+a read count for each subsample point and use this value on the x axis.
+
+Finally, the script creates a plot using the proportions as the x axis.
+
+Command Line Flag | Description
+----------------- | -------------------- | -----------
+`<input directories>` | Required.<br>List of cufflinks results directories
+`-f`, `--fpkm-cutoff` | Default: `0`<br> Cutoff at which to count genes as observed.
+`-c`, `--read-counts` | Default: `None`<br> File containing BAM file read counts, used for x axis instead of percentages. See Step 3.
+`-o`, `--output` | Default: `gene_counts`<br>Plot output filename base. Default: `gene_counts.png` / `.pdf`
+`-l`, `--log` | Default: `info`<br>Level of log messages to display. Can be `debug`, `info` or `warning`.
+`-u`, `--log-output` | Default: `stdout`<br>Log output filename.
+
+### Dependencies
+The scripts are written in bash and Python. 
+[Picard](http://picard.sourceforge.net/),
+[Cufflinks](http://cufflinks.cbcb.umd.edu/) and
+[samtools](http://samtools.sourceforge.net/) must be installed for the first
+three steps.
+
+The following Python libraries are required:
+
+* [matplotlib](http://matplotlib.org/)
+* argparse
+* collections (defaultdict)
+* logging
+* os
+* re
+
 
 
 ---------------------------------------------------------------------------
@@ -124,17 +249,20 @@ help to choose an appropriate cut-off.
 Additional options allow you to interrogate coverage on different reference
 strands and within regions of interest, as specified by a BED file.
 
-### Usage
-
-	bismark_coverage_curves.pl <coverage_file.cov>
-
-For nicer fonts, download the [OpenSans-Regular.ttf](https://github.com/ewels/visualizations/raw/master/OpenSans-Regular.ttf)
-font into the same directory as the script. Font is from [Google Fonts](https://www.google.com/fonts/specimen/Open+Sans).
-
 ### Example Output
 ![Bismark Coverage Curves Plot](https://raw.githubusercontent.com/ewels/visualizations/master/examples/coverageStats.png)
 
 See additional [text output](https://raw.githubusercontent.com/ewels/visualizations/master/examples/coverageStats.txt)
+
+
+### Usage
+
+```bash
+perl bismark_coverage_curves.pl <coverage_file.cov>
+```
+
+For nicer fonts, download the [OpenSans-Regular.ttf](https://github.com/ewels/visualizations/raw/master/OpenSans-Regular.ttf)
+font into the same directory as the script. Font is from [Google Fonts](https://www.google.com/fonts/specimen/Open+Sans).
 
 ### Parameters
 
@@ -143,9 +271,10 @@ it runs.
 
 Command Line Flag | Description
 ----------------- | -----------
-`--regions <regions.bed>` | Required.<br>Supply a BED file with regions of interest. The script will show coverage inside and outside these regions
+`--regions <regions.bed>` | Default: None<br>Supply a BED file with regions of interest. The script will show coverage inside and outside these regions
 `--stranded` | Default: No.<br>Split the report up into forward and reverse strands
-`--min_cov` and `--max_cov` | Defaults: `0x, 100x`.<br>The minimum and maximum coverage limits to consider / plot
+`--min_cov` | Default: `0x`.<br>The minimum coverage limit to consider / plot
+`--max_cov` | Default: `15x`; `50x` if `--regions` is set.<br>The maximum coverage limit to consider / plot
 `--binsize` | Default: `1`.<br>The coverage bin size to use - what size steps to use between `--min_cov` and `--max_cov`
 `--numlines` | Default: `1000000`.<br>Number of lines to process. More lines gives more accuracy but takes longer to run. Note: if the imput is sorted and your sample biased it's a good idea to specify a large number.
 `--append` | Default: `_coverageStats.txt`.<br>String to append to results filenames
@@ -189,13 +318,6 @@ be considered, the number of different cytosines passing the coverage
 threshold for a window to be counted as well as restricting the 
 windows to those overlapping regions of interest, as specified by a BED file.
 
-### Usage
-
-	bismark_window_sizes.pl <coverage_file.cov>
-
-For nicer fonts, download the [OpenSans-Regular.ttf](https://github.com/ewels/visualizations/raw/master/OpenSans-Regular.ttf)
-font into the same directory as the script. Font is from [Google Fonts](https://www.google.com/fonts/specimen/Open+Sans).
-
 ### Example Output
 ![Bismark Window Sizes Plot](https://raw.githubusercontent.com/ewels/visualizations/master/examples/windowSizes_wholeGenome.png)
 
@@ -203,6 +325,14 @@ font into the same directory as the script. Font is from [Google Fonts](https://
 
 See additional text output: [first plot](https://raw.githubusercontent.com/ewels/visualizations/master/examples/windowSizes_wholeGenome.txt), [second plot](https://raw.githubusercontent.com/ewels/visualizations/master/examples/windowSizes_roi.txt)
 
+### Usage
+
+```bash
+perl bismark_window_sizes.pl <coverage_file.cov>
+```
+
+For nicer fonts, download the [OpenSans-Regular.ttf](https://github.com/ewels/visualizations/raw/master/OpenSans-Regular.ttf)
+font into the same directory as the script. Font is from [Google Fonts](https://www.google.com/fonts/specimen/Open+Sans).
 
 ### Parameters
 
@@ -211,7 +341,7 @@ it runs.
 
 Command Line Flag | Description
 ----------------- | -----------
-`--regions <regions.bed>` | Required.<br>Supply a BED file with regions of interest. Only reads and windows overlapping these regions will be considered.
+`--regions <regions.bed>` | Default: None<br>Supply a BED file with regions of interest. Only reads and windows overlapping these regions will be considered.
 `--stranded <for / rev>` | Default: both.<br>Consider reads on only one reference strand
 `--coverage` | Default: `10x`.<br>Minumum number of observations required to count a Cytosine
 `--min_counts <comma separated integers>` | Default: `1,2,3,4,5,10`.<br>List of count thresholds to use - how many different cytosines must be seen within a window for it to pass

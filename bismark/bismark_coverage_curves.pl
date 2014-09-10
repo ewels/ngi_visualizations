@@ -30,7 +30,7 @@ my $BS_num_notroi_Cs = 0;
 my $stranded;
 my $regions;
 my $min_cov = 0;
-my $max_cov = 50;
+my $max_cov;
 my $binsize = 1;
 my $numlines = 1000000;
 my $append = "_coverageStats.txt";
@@ -58,7 +58,7 @@ if($help){
 --min_cov (default = 0)
 	Minimum coverage to consider
 	
---max_cov (default = 100)
+--max_cov (default = 15, 50 with capture regions)
 	Maximum coverage to consider
 	
 --binsize (default = 1)
@@ -81,12 +81,25 @@ if($help){
 }
 if(!$config_result){
 	die "Error! could not parse command line options..\n";
-} elsif(!$quiet) {
+}
+
+# Set the default max coverage
+unless($max_cov){
+	if($regions){
+		$max_cov = 50;
+	} else {
+		$max_cov = 15;
+	}
+}
+
+# Print the config options
+if(!$quiet) {
 	warn "Configuration Options:\n";
 	if($regions){ warn "\tROI File: $regions\n"; }
 	warn "\tMin Coverage: $min_cov\n\tMax Coverage: $max_cov\n\tBin Size: $binsize\n\tNumber lines to process: $numlines\n\tOutput filename append: $append\n\n";
 }
 
+# Load in the input files
 my @filenames = @ARGV;
 if(scalar @filenames == 0){ die "Error! No input filenames found.. Use --help for instructions\n"; }
 
@@ -277,6 +290,12 @@ foreach my $fn (@filenames){
 		$binstats .= $line."\n";
 	}
 	
+	# Sanity check for strandedness
+	if($TS_num_Cs == 0 or $BS_num_Cs == 0){
+		warn sprintf("\nError in total number of Top Strand Cs (%d) or Bottom Strand Cs (%d).\nCould be an input format problem? Ignoring --stranded..\n", $TS_num_Cs, $BS_num_Cs);
+		$stranded = 0;
+	}
+	
 	# Calculate summary & plot data
 	my @plot;
 	my @cov_counts_array;
@@ -302,7 +321,7 @@ foreach my $fn (@filenames){
 			push @cov_counts_array, $bin;
 		}
 	}
-		
+	
 	if($stranded){
 		my $TS_cum_count = $TS_num_Cs;
 		my $BS_cum_count = $BS_num_Cs;
@@ -399,7 +418,7 @@ foreach my $fn (@filenames){
 			$summary .= sprintf("\tMean Regions coverage: %.2f\n\tMedian Regions coverage: %d\n", mean(\@TS_region_cov_counts_array), median(\@TS_region_cov_counts_array));
 			$summary .= sprintf("\tMean coverage outside Regions: %.2f\n\tMedian coverage outside Regions: %d\n", mean(\@TS_region_notcov_counts_array), median(\@TS_region_notcov_counts_array));
 		}
-		
+	
 		$summary .= "\nSummary of coverage on Bottom Strand (-):\n";
 		$summary .= sprintf("\tCovered Cs: %d out of %d (%.2f%%)\n", $BS_binned_cov_counts, $BS_num_Cs, (($BS_binned_cov_counts/$BS_num_Cs)*100));
 		if($regions){
