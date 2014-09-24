@@ -117,6 +117,18 @@ The script is written in Python. The following libraries are required:
 python plot_complexity_curves.py *.preseq
 ```
 
+Example bash code to use samtools to count reads in BAM files:
+```
+echo "Sample_1 "$(samtools view -c -F 4 Sample_1.bam)" "$(samtools view -c -F 4 Sample_1_dedup.bam)
+```
+
+Example "real data" file:
+```
+P1102_101 38995594 31599283
+P1102_102 37663274 31457827
+...
+```
+
 
 ---------------------------------------------------------------------------
 
