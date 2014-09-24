@@ -5,6 +5,7 @@ A collection of next-gen sequencing visualisation scripts.
 
 * [Count Biotypes](#count-biotypes)
 	* Uses HTSeq to plot read overlaps with different feature biotype flags
+* [preseq Complexity Curves](#preseq-complexity-curves)
 * [Subsampled Gene Observations](#subsampled-gene-observations)
     * Group of scripts to plot the number of observed genes at varying sample
     subsampling proportions. Can give an impression of library complexity on
@@ -106,6 +107,15 @@ The script is written in Python. The following libraries are required:
 * collections (defaultdict)
 * logging
 * os
+
+
+---------------------------------------------------------------------------
+
+## preseq Complexity Curves
+
+```bash
+python plot_complexity_curves.py *.preseq
+```
 
 
 ---------------------------------------------------------------------------
