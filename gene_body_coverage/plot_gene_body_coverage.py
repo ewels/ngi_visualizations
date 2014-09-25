@@ -38,7 +38,7 @@ def plot_gene_body_coverage (coverage_files, output_fn='geneBodyCoverage'):
                     (percentile, count) = line.split(None, 1)
                     if percentile.isdigit() is False:
                         continue
-                    values[int(percentile)] = int(count)
+                    values[int(percentile)] = float(count) / 1000000
         except IOError as e:
             logging.error("Could not load input file: {}".format(fn))
             raise IOError(e)
@@ -55,8 +55,8 @@ def plot_gene_body_coverage (coverage_files, output_fn='geneBodyCoverage'):
     
     # Labels
     matplotlib.rcParams['mathtext.default'] = 'regular'
-    plt.xlabel("Gene body position ($5' \\rightarrow 3'$)")
-    plt.ylabel("Normalised Read Count")
+    plt.xlabel(r"Gene body position ($5' \rightarrow 3'$)")
+    plt.ylabel(r'Read Count ($\times 10^6$)')
     plt.title('Gene Body Coverage')
     
     # Legend
