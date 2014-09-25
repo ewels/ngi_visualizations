@@ -30,9 +30,14 @@ def main(ccurves, real_counts_path=False, output_name='complexity_curves', x_min
             with open(real_counts_path) as fh:
                 for line in fh:
                     line = line.strip()
-                    (fn, total, unique) = line.split(None, 3) # Split on any whitespace
-                    real_counts_total[fn] = total
-                    real_counts_unique[fn] = unique
+                    cols = line.split() # Split on any whitespace
+                    try:
+                        if cols[1].isdigit():
+                            real_counts_total[cols[0]] = int(cols[1])
+                        if cols[2].isdigit():
+                            real_counts_unique[cols[0]] = int(cols[2])
+                    except IndexError:
+                        pass
         except IOError as e:
             print("Error loading real counts file: {}".format(real_counts_path))
             raise IOError(e)
@@ -95,40 +100,55 @@ def main(ccurves, real_counts_path=False, output_name='complexity_curves', x_min
             real_key = sample_name_raw + ".bam"
         if real_key:
             t_reads = int(real_counts_total[real_key])
-            u_reads = int(real_counts_unique[real_key])
-            ax.plot(t_reads, u_reads, 'o')
-            print "   Found real counts for {} - Total: {}, Unique: {}".format(sample_name, t_reads, u_reads)
-    
+            if real_key in real_counts_unique:
+                u_reads = int(real_counts_unique[real_key])
+                ax.plot(t_reads, u_reads, 'o', color=p.get_color())
+                print "   Found real counts for {} - Total: {}, Unique: {}".format(sample_name, t_reads, u_reads)
+            else:
+                xvalues = p.get_xdata()
+                yvalues = p.get_ydata()
+                interp = np.interp(t_reads, xvalues, yvalues)
+                ax.plot(t_reads, interp, 'o', color=p.get_color())
+                print "   Found real count for {} - Total: {} (preseq unique reads: {})".format(sample_name, t_reads, int(interp))
+
     # plot perfect library as dashed line
     ax.plot([0, x_max], [0, x_max], color='black', linestyle='--', linewidth=1)
     
     # Set the axis limits
-    max_unique = 0
-    if len(real_counts_unique) > 0:
-        max_unique = int(max(d for d in real_counts_unique.values()))
-    if x_max < max_unique:
-        print "WARNING: x-max value {} is less than max real data {}".format(x_max, max_unique)
-    plt.xlim(x_min, x_max)
-    
     max_total = 0
     if len(real_counts_total) > 0:
         max_total = int(max(d for d in real_counts_total.values()))
-    preseq_ymax = global_y_max_ccurve_limit + global_y_max_ccurve_limit*0.2
-    plt.ylim(100000, max(preseq_ymax, max_total))
-    if preseq_ymax < max_total:
-        print "WARNING: y-max value changed from default {} to the max real data {}".format(int(preseq_ymax), max_total)
+    if x_max < max_total:
+        print "WARNING: x-max value {} is less than max real data {}".format(x_max, max_total)
+    plt.xlim(x_min, x_max)
+    
+    max_unique = 0
+    if len(real_counts_unique) > 0:
+        max_unique = int(max(d for d in real_counts_unique.values()))
+        max_unique += max_unique * 0.1
+    preseq_ymax = global_y_max_ccurve_limit
+    preseq_ymax += global_y_max_ccurve_limit * 0.1
+    plt.ylim(100000, max(preseq_ymax, max_unique))
+    if preseq_ymax < max_unique:
+        print "WARNING: y-max value changed from default {} to the max real data {}".format(int(preseq_ymax), max_unique )
     
     # label the axis
     plt.ylabel('Unique Molecules')
     plt.xlabel('Total Molecules (including duplicates)')
-    plt.title("preseq Complexity Curves")
+    plt.title("Complexity Curve: preseq")
+    if len(real_counts_unique) > 0:
+        plt.text(0.5, -0.15, 'Points show read count versus deduplicated read counts (externally calculated)',
+            horizontalalignment='center', fontsize=8, transform = ax.transAxes)
+    elif len(real_counts_total) > 0:
+        plt.text(0.5, -0.15, 'Points show externally calculated read counts on the curves',
+            horizontalalignment='center', fontsize=8, transform = ax.transAxes)
     
     # Sort out some of the nastier plotting defaults
     ax.tick_params(top=False, right=False, direction='out')
     
     # Move the subplot around to fit in the legend
     box = ax.get_position()
-    ax.set_position([0.08, box.y0, (box.width * 0.78)-0.02, box.height])
+    ax.set_position([0.08, box.y0+0.05, (box.width * 0.78)-0.02, box.height-0.05])
     # Set the font size according to how big the legend text is
     font = {'size': 5}
     if len(legend[1]) <= 20 and max_label_length <= 45:
