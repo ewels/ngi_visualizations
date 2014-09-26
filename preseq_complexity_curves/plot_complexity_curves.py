@@ -160,8 +160,10 @@ def plot_complexity_curves(ccurves, real_counts_path=False, output_name='complex
     ax.legend(legend[0], legend[1],loc='center left', bbox_to_anchor=(1.01, 0.5), prop=font)
     
     # now save the plot
-    plt.savefig(output_name)
-    plt.clf()
+    png_fn = "{}.png".format(output_name)
+    pdf_fn = "{}.pdf".format(output_name)
+    plt.savefig(png_fn)
+    plt.savefig(pdf_fn)
     return 0
 
 def computeLimit(value, ccurve_TOTAL_READS):
