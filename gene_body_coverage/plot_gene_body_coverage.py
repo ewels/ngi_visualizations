@@ -56,7 +56,7 @@ def plot_gene_body_coverage (coverage_files, output_fn='geneBodyCoverage'):
     # Labels
     matplotlib.rcParams['mathtext.default'] = 'regular'
     plt.xlabel(r"Gene body position ($5' \rightarrow 3'$)")
-    plt.ylabel(r'Read Count ($\times 10^6$)')
+    plt.ylabel(r'Cumulative Read Count ($\times 10^6$)')
     plt.title('Gene Body Coverage')
     
     # Legend
