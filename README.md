@@ -43,11 +43,11 @@ The script is written in Python and can be run on the command line or imported i
 The following plots were generated from a Total Small RNA run in Human cells,
 accession [SRR1304304](http://www.ncbi.nlm.nih.gov/sra/?term=SRR1304304).
 
-![Biotype overlaps](../blob/master/examples/SRR1304304_trimmed_aligned_biotypeCounts.png)
+![Biotype overlaps](../master/examples/SRR1304304_trimmed_aligned_biotypeCounts.png)
 
-![Biotype lengths](../blob/master/examples/SRR1304304_trimmed_aligned_biotypeLengths.png)
+![Biotype lengths](../master/examples/SRR1304304_trimmed_aligned_biotypeLengths.png)
 
-![Biotype length percentages](../blob/master/examples/SRR1304304_trimmed_aligned_biotypeLengthPercentages.png)
+![Biotype length percentages](../master/examples/SRR1304304_trimmed_aligned_biotypeLengthPercentages.png)
 
 
 ### Usage
@@ -131,10 +131,10 @@ for more information.
 
 ### Example output
 Plotting points with read counts versus interpolated unique read counts (from preseq):
-![Just read counts](../blob/master/examples/complexity_curves_readcounts.png)
+![Just read counts](../master/examples/complexity_curves_readcounts.png)
 
 Plotting points with read counts versus deduplicated read counts (using Picard):
-![Read counts and unique reads](../blob/master/examples/complexity_curves_PicardDups.png)
+![Read counts and unique reads](../master/examples/complexity_curves_PicardDups.png)
 
 ### Usage
 
@@ -210,7 +210,7 @@ The package is comprised of four scripts which must be run separately:
 in SciLifeLab, and will require modification to run on different systems.
 
 ### Example output
-![Subsampled gene observations](../blob/master/examples/subsampled_gene_observations.png)
+![Subsampled gene observations](../master/examples/subsampled_gene_observations.png)
 
 ### Step 1: Subsample the BAM files
 ```bash
@@ -318,7 +318,7 @@ A simple script to take the output from the
 `geneBody_coverage.py` script and plot this on single graph (png and pdf).
 
 ### Example output
-![gene body coverage](../blob/master/examples/geneBodyCoverage.png)
+![gene body coverage](../master/examples/geneBodyCoverage.png)
 
 ### Usage
 This tool is a python script and should be run on the command line as follows:
@@ -370,9 +370,9 @@ Additional options allow you to interrogate coverage on different reference
 strands and within regions of interest, as specified by a BED file.
 
 ### Example Output
-![Bismark Coverage Curves Plot](../blob/master/examples/coverageStats.png)
+![Bismark Coverage Curves Plot](../master/examples/coverageStats.png)
 
-See additional [text output](../blob/master/examples/coverageStats.txt)
+See additional [text output](../master/examples/coverageStats.txt)
 
 
 ### Usage
@@ -439,11 +439,11 @@ threshold for a window to be counted as well as restricting the
 windows to those overlapping regions of interest, as specified by a BED file.
 
 ### Example Output
-![Bismark Window Sizes Plot](../blob/master/examples/windowSizes_wholeGenome.png)
+![Bismark Window Sizes Plot](../master/examples/windowSizes_wholeGenome.png)
 
-![Bismark Window Sizes Plot](../blob/master/examples/windowSizes_roi.png)
+![Bismark Window Sizes Plot](../master/examples/windowSizes_roi.png)
 
-See additional text output: [first plot](../blob/master/examples/windowSizes_wholeGenome.txt), [second plot](../blob/master/examples/windowSizes_roi.txt)
+See additional text output: [first plot](../master/examples/windowSizes_wholeGenome.txt), [second plot](../master/examples/windowSizes_roi.txt)
 
 ### Usage
 
@@ -521,7 +521,7 @@ can be shared as single files and viewed in any web browser.
 
 ### Example Output
 
-![Bowtie Alignments](../blob/master/examples/bowtie_align_screenshot.png)
+![Bowtie Alignments](../master/examples/bowtie_align_screenshot.png)
 
 See the example report here: [bowtie_report.html](https://rawgit.com/ewels/visualizations/master/examples/bowtie_report.html)
 
