@@ -20,22 +20,22 @@ file with examples and instructions.
 	* Two scripts to parse log files containing alignment stats from bowtie,
 		bowtie 2 or tophat and generate overview HTML reports
 
-See below for example outputs. Click an image to go to that script.
+### See below for example outputs. Click an image to go to that script.
 
 
-[<img width="45%" src="examples/SRR1304304_trimmed_aligned_biotypeCounts.png">](count_biotypes/)
+[<img align="left" width="45%" src="examples/SRR1304304_trimmed_aligned_biotypeCounts.png">](count_biotypes/)
 
-[<img width="45%" src="examples/SRR1304304_trimmed_aligned_biotypeLengths.png">](count_biotypes/)
+[<img align="left" width="45%" src="examples/SRR1304304_trimmed_aligned_biotypeLengths.png">](count_biotypes/)
 
-[<img width="45%" src="examples/complexity_curves_readcounts.png">](preseq_complexity_curves/)
+[<img align="left" width="45%" src="examples/complexity_curves_readcounts.png">](preseq_complexity_curves/)
 
-[<img width="45%" src="examples/subsampled_gene_observations.png">](subsampled_gene_observations/)
+[<img align="left" width="45%" src="examples/subsampled_gene_observations.png">](subsampled_gene_observations/)
 
-[<img width="45%" src="examples/geneBodyCoverage.png">](gene_body_coverage/)
+[<img align="left" width="45%" src="examples/geneBodyCoverage.png">](gene_body_coverage/)
 
-[<img width="45%" src="examples/coverageStats.png">](bismark/)
+[<img align="left" width="45%" src="examples/coverageStats.png">](bismark/)
 
-[<img width="45%" src="examples/windowSizes_roi.png">](bismark/)
+[<img align="left" width="45%" src="examples/windowSizes_roi.png">](bismark/)
 
-[<img width="45%" src="examples/bowtie_align_screenshot.png">](alignment_summaries/)
+[<img align="left" width="45%" src="examples/bowtie_align_screenshot.png">](alignment_summaries/)
 
