@@ -23,11 +23,11 @@ The script is written in Python and can be run on the command line or imported i
 The following plots were generated from a Total Small RNA run in Human cells,
 accession [SRR1304304](http://www.ncbi.nlm.nih.gov/sra/?term=SRR1304304).
 
-![Biotype overlaps](../master/examples/SRR1304304_trimmed_aligned_biotypeCounts.png)
+![Biotype overlaps](../examples/SRR1304304_trimmed_aligned_biotypeCounts.png)
 
-![Biotype lengths](../master/examples/SRR1304304_trimmed_aligned_biotypeLengths.png)
+![Biotype lengths](../examples/SRR1304304_trimmed_aligned_biotypeLengths.png)
 
-![Biotype length percentages](../master/examples/SRR1304304_trimmed_aligned_biotypeLengthPercentages.png)
+![Biotype length percentages](../examples/SRR1304304_trimmed_aligned_biotypeLengthPercentages.png)
 
 
 ## Usage

@@ -23,19 +23,19 @@ file with examples and instructions.
 See below for example outputs. Click an image to go to that script.
 
 
-[![Biotype overlaps](examples/SRR1304304_trimmed_aligned_biotypeCounts.png)](count_biotypes/)
+[<img width="45%" src="examples/SRR1304304_trimmed_aligned_biotypeCounts.png">](count_biotypes/)
 
-[![Biotype lengths](examples/SRR1304304_trimmed_aligned_biotypeLengths.png)](count_biotypes/)
+[<img width="45%" src="examples/SRR1304304_trimmed_aligned_biotypeLengths.png">](count_biotypes/)
 
-[![Just read counts](examples/complexity_curves_readcounts.png)](preseq_complexity_curves/)
+[<img width="45%" src="examples/complexity_curves_readcounts.png">](preseq_complexity_curves/)
 
-[![Subsampled gene observations](examples/subsampled_gene_observations.png)](subsampled_gene_observations/)
+[<img width="45%" src="examples/subsampled_gene_observations.png">](subsampled_gene_observations/)
 
-[![gene body coverage](examples/geneBodyCoverage.png)](gene_body_coverage/)
+[<img width="45%" src="examples/geneBodyCoverage.png">](gene_body_coverage/)
 
-[![Bismark Coverage Curves Plot](examples/coverageStats.png)](bismark/)
+[<img width="45%" src="examples/coverageStats.png">](bismark/)
 
-[![Bismark Window Sizes Plot](examples/windowSizes_roi.png)](bismark/)
+[<img width="45%" src="examples/windowSizes_roi.png">](bismark/)
 
-[![Bowtie Alignments](examples/bowtie_align_screenshot.png)](alignment_summaries/)
+[<img width="45%" src="examples/bowtie_align_screenshot.png">](alignment_summaries/)
 

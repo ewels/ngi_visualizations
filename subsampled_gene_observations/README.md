@@ -17,7 +17,7 @@ The package is comprised of four scripts which must be run separately:
 in SciLifeLab, and will require modification to run on different systems.
 
 ## Example output
-![Subsampled gene observations](../master/examples/subsampled_gene_observations.png)
+![Subsampled gene observations](../examples/subsampled_gene_observations.png)
 
 ## Step 1: Subsample the BAM files
 ```bash

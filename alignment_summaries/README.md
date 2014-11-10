@@ -29,7 +29,7 @@ can be shared as single files and viewed in any web browser.
 
 ## Example Output
 
-![Bowtie Alignments](../master/examples/bowtie_align_screenshot.png)
+![Bowtie Alignments](../examples/bowtie_align_screenshot.png)
 
 See the example report here: [bowtie_report.html](https://rawgit.com/ewels/visualizations/master/examples/bowtie_report.html)
 
