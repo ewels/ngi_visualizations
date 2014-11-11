@@ -39,11 +39,13 @@ The following Python libraries are required:
 These scripts were written for use at the 
 [National Genomics Infrastructure](https://portal.scilifelab.se/genomics/)
 at [SciLifeLab](http://www.scilifelab.se/) in Stockholm, Sweden. They are 
-part of a larger repository of [Vizualisation Scripts](../).
-For more information, please get in touch with
-[Phil Ewels](phil.ewels@scilifelab.se).
+part of a larger repository of
+[Visualization Scripts](https://github.com/SciLifeLab/visualizations).
 
-<p align="center"><a href="http://www.scilifelab.se/)" target="_blank"><img src="examples/SciLifeLab_logo.png" title="SciLifeLab"></a></p>
+For more information, please get in touch with
+[Phil Ewels](https://github.com/ewels).
+
+<p align="center"><a href="http://www.scilifelab.se/" target="_blank"><img src="../examples/SciLifeLab_logo.png" title="SciLifeLab"></a></p>
 
 
 

@@ -32,7 +32,7 @@ file with examples and instructions.
         <img src="examples/SRR1304304_trimmed_aligned_biotypeCounts.png">
       </a>
     </td>
-    <td width="50%">
+    <td>
       <a href="count_biotypes/" title="Count Biotypes">
         <img src="examples/SRR1304304_trimmed_aligned_biotypeLengths.png">
       </a>
@@ -51,7 +51,7 @@ file with examples and instructions.
         <img src="examples/complexity_curves_readcounts.png">
       </a>
     </td>
-    <td width="50%">
+    <td>
       <a href="subsampled_gene_observations/" title="Subsampled Gene Observations">
         <img src="examples/subsampled_gene_observations.png">
       </a>
@@ -70,7 +70,7 @@ file with examples and instructions.
         <img src="examples/geneBodyCoverage.png">
       </a>
     </td>
-    <td width="50%">
+    <td>
       <a href="alignment_summaries/" title="Alignment Summaries">
         <img src="examples/bowtie_align_screenshot.png">
       </a>
@@ -89,7 +89,7 @@ file with examples and instructions.
         <img src="examples/coverageStats.png">
       </a>
     </td>
-    <td width="50%">
+    <td>
       <a href="bismark/#bismark-window-sizes" title="Bismark Window Sizes">
         <img src="examples/windowSizes_roi.png">
       </a>
@@ -102,6 +102,6 @@ These scripts were written for use at the
 [National Genomics Infrastructure](https://portal.scilifelab.se/genomics/)
 at [SciLifeLab](http://www.scilifelab.se/) in Stockholm, Sweden.
 For more information, please get in touch with
-[Phil Ewels](phil.ewels@scilifelab.se).
+[Phil Ewels](https://github.com/ewels).
 
-<p align="center"><a href="http://www.scilifelab.se/)" target="_blank"><img src="examples/SciLifeLab_logo.png" title="SciLifeLab"></a></p>
+<p align="center"><a href="http://www.scilifelab.se/" target="_blank"><img src="examples/SciLifeLab_logo.png" title="SciLifeLab"></a></p>
