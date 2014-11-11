@@ -22,20 +22,79 @@ file with examples and instructions.
 
 ### See below for example outputs. Click an image to go to that script.
 
+<table>
+  <tr>
+    <th colspan="2"><a href="count_biotypes/">Count Biotypes</a></th>
+  </tr>
+  <tr>
+    <td>
+      <a href="count_biotypes/" title="Count Biotypes">
+        <img src="examples/SRR1304304_trimmed_aligned_biotypeCounts.png">
+      </a>
+    </td>
+    <td>
+      <a href="count_biotypes/" title="Count Biotypes">
+        <img src="examples/SRR1304304_trimmed_aligned_biotypeLengths.png">
+      </a>
+    </td>
+  </tr>
+</table>
 
-[<img align="left" width="45%" src="examples/SRR1304304_trimmed_aligned_biotypeCounts.png">](count_biotypes/)
+<table>
+  <tr>
+    <th><a href="preseq_complexity_curves/">preseq Complexity Curves</a></th>
+    <th><a href="subsampled_gene_observations/">Subsampled Gene Observations</a></th>
+  </tr>
+  <tr>
+    <td>
+      <a href="preseq_complexity_curves/" title="preseq Complexity Curves">
+        <img src="examples/complexity_curves_readcounts.png">
+      </a>
+    </td>
+    <td>
+      <a href="subsampled_gene_observations/" title="Subsampled Gene Observations">
+        <img src="examples/subsampled_gene_observations.png">
+      </a>
+    </td>
+  </tr>
+</table>
 
-[<img align="left" width="45%" src="examples/SRR1304304_trimmed_aligned_biotypeLengths.png">](count_biotypes/)
+<table>
+  <tr>
+    <th><a href="gene_body_coverage/">Gene Body Coverage</a></th>
+    <th><a href="alignment_summaries/">Alignment Summaries</a></th>
+  </tr>
+  <tr>
+    <td>
+      <a href="gene_body_coverage/" title="Gene Body Coverage">
+        <img src="examples/geneBodyCoverage.png">
+      </a>
+    </td>
+    <td>
+      <a href="alignment_summaries/" title="Alignment Summaries">
+        <img src="examples/bowtie_align_screenshot.png">
+      </a>
+    </td>
+  </tr>
+</table>
 
-[<img align="left" width="45%" src="examples/complexity_curves_readcounts.png">](preseq_complexity_curves/)
+<table>
+  <tr>
+    <th><a href="bismark/#bismark-coverage-curves">Bismark Coverage Curves</a></th>
+    <th><a href="bismark/#bismark-window-sizes">Bismark Window Sizes</a></th>
+  </tr>
+  <tr>
+    <td>
+      <a href="bismark/#bismark-coverage-curves" title="Bismark Coverage Curves">
+        <img src="examples/coverageStats.png">
+      </a>
+    </td>
+    <td>
+      <a href="bismark/#bismark-window-sizes" title="Bismark Window Sizes">
+        <img src="examples/windowSizes_roi.png">
+      </a>
+    </td>
+  </tr>
+</table>
 
-[<img align="left" width="45%" src="examples/subsampled_gene_observations.png">](subsampled_gene_observations/)
-
-[<img align="left" width="45%" src="examples/geneBodyCoverage.png">](gene_body_coverage/)
-
-[<img align="left" width="45%" src="examples/coverageStats.png">](bismark/)
-
-[<img align="left" width="45%" src="examples/windowSizes_roi.png">](bismark/)
-
-[<img align="left" width="45%" src="examples/bowtie_align_screenshot.png">](alignment_summaries/)
 
