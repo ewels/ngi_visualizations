@@ -1,5 +1,4 @@
-Visualizations
-==============
+# Visualizations
 
 A collection of next-gen sequencing visualisation scripts. Click a script's
 name to go to it's subdirectory which will contain a detailed `README.md`
@@ -20,7 +19,8 @@ file with examples and instructions.
 	* [Bismark Coverage Curves](bismark/#bismark-coverage-curves) - Plots the proportion of cytosines meeting increasing coverage thresholds
 	* [Bismark Window Sizes](bismark/#bismark-window-sizes) - Plots the proportion of windows passing observation thresholds with increasing window sizes
 
-**See below for example outputs. Click an image to go to that script.**
+### Examples
+See below for example outputs. Click an image to go to that script.
 
 <table>
   <tr>
@@ -96,6 +96,11 @@ file with examples and instructions.
     </td>
   </tr>
 </table>
+
+### Contributing
+If you would like to add a visualization script to this repository, please
+read the [contributing notes](CONTRIBUTING.md) first. These describe the
+steps required in adding your script to the repository.
 
 ### Credits
 These scripts were written for use at the 
