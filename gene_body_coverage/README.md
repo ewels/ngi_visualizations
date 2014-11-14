@@ -9,6 +9,7 @@ A simple script to take the output from the
 
 ## Usage
 This tool is a python script and should be run on the command line as follows:
+
 ```bash
 python plot_gene_body_coverage.py *.geneBodyCoverage.txt
 ```
@@ -18,7 +19,7 @@ python plot_gene_body_coverage.py *.geneBodyCoverage.txt
 Command Line Flag | Description
 ----------------- | -------------------- | -----------
 `<coverage_files>` | Required.<br>List of cufflinks results directories
-`-o`, `--output` | Default: `gene_counts`<br>Plot output filename base. Default: `gene_counts.png` / `.pdf`
+`-o`, `--output` | Default: `gene_counts`<br>Plot output filename base.
 `-l`, `--log` | Default: `info`<br>Level of log messages to display. Can be `debug`, `info` or `warning`.
 `-u`, `--log-output` | Default: `stdout`<br>Log output filename.
 `-h`, `--help` | Display the help.

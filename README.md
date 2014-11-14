@@ -61,6 +61,26 @@ See below for example outputs. Click an image to go to that script.
 
 <table>
   <tr>
+    <th><a href="qualimap/">Qualimap Plots</a></th>
+    <th><a href="#">&nbsp;</a></th>
+  </tr>
+  <tr>
+    <td width="50%">
+      <a href="qualimap/" title="Coverage Histogram">
+        <img src="examples/qualimap_coverage.png">
+      </a>
+      <a href="qualimap/" title="Insert Size Histogram">
+        <img src="examples/qualimap_insertsize.png">
+      </a>
+    </td>
+    <td>
+      &nbsp;
+    </td>
+  </tr>
+</table>
+
+<table>
+  <tr>
     <th><a href="gene_body_coverage/">Gene Body Coverage</a></th>
     <th><a href="alignment_summaries/">Alignment Summaries</a></th>
   </tr>
