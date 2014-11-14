@@ -3,7 +3,7 @@
 coverage_histogram.py
 
 Takes results from the Qualimap coverage_histogram.txt results file
-and plots a nice looking graph using matplotlib + seaborn
+and plots a nice looking graph using matplotlib
 """
 
 from __future__ import print_function

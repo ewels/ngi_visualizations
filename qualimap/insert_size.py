@@ -1,9 +1,9 @@
 #!/usr/bin/python
 """
-insertsize_histogram.py
+insert_size.py
 
-Takes results from the Qualimap insertsize_histogram.txt results file
-and plots a nice looking graph using matplotlib + seaborn
+Takes results from the Qualimap insert_size_histogram.txt results file
+and plots a nice looking graph using matplotlib
 """
 
 from __future__ import print_function
@@ -117,8 +117,8 @@ if __name__ == "__main__":
                         help="Level of log messages to display")
     parser.add_argument("-u", "--log-output", dest="log_output", default='stdout',
                         help="Log output filename. Default: stdout")
-    parser.add_argument("insertsize_data", metavar='<insertsize data file>',
-                        help="Data input - usually raw_data_qualimapReport/insertsize_histogram.txt")
+    parser.add_argument("insertsize_data", metavar='<insert size data file>',
+                        help="Data input - usually raw_data_qualimapReport/insert_size_histogram.txt")
     kwargs = vars(parser.parse_args())
     
     # Initialise logger
