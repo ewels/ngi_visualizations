@@ -1,7 +1,7 @@
 # Qualimap Plots
 
 [Qualimap](http://qualimap.bioinfo.cipf.es/) is a tool to
-_"facilitate the quality control of alignment sequencing data_.
+_"facilitate the quality control of alignment sequencing data"_.
 
 Whilst it produces nice plots out of the box, we have created some scripts
 to re-plot some of the data to give a more consistent feel to the output.
