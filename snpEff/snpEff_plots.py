@@ -18,7 +18,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-def plot_snpEff (summary_fn, output_fn='effect_types', logx=False):
+def plot_snpEff (summary_fn, output_fn='effect', logx=False):
     """
     Main function. Takes summary input file and makes some plots.
     """    
@@ -146,8 +146,8 @@ def plot_snpEff_graph(types, counts, percents, output_fn, title, logx):
 if __name__ == "__main__":
     # Command line arguments
     parser = argparse.ArgumentParser("snpEff_plots.py", description="Plot snpEFF graphs")
-    parser.add_argument("-o", "--output", dest="output_fn", default='effect_types',
-                        help="Plot output filename base. Default: effect_types.png / .pdf")
+    parser.add_argument("-o", "--output", dest="output_fn", default='effect',
+                        help="Plot output filename base. Default: effect (effect_types.png / effect_regions.png)")
     parser.add_argument("-x", "--logx", dest="logx", type=bool, default=False,
                         help="Use a log scale on the x axis?")
     parser.add_argument("-l", "--log", dest="log_level", default='info', choices=['debug', 'info', 'warning'],
