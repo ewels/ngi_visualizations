@@ -25,35 +25,56 @@ def plot_snpEff (summary_fn, output_fn='effect_types', logx=False):
     # Load in the data
     fn = os.path.realpath(summary_fn)
     types = {}
-    counts = {}
-    percents = {}
+    type_counts = {}
+    type_percents = {}
+    regions = {}
+    region_counts = {}
+    region_percents = {}
     try:
         with open(fn, 'r') as fh:
-            recording = False
+            recordingType = recordingRegion = False
             for line in fh:
                 line = line.strip()
-                if recording is False and line == '# Count by effects':
-                    recording = True
-                elif recording and line[:1] == '#':
-                    recording = False
-                if recording:
+                if line == '# Count by effects':
+                    recordingType = True
+                    recordingRegion = False
+                elif line == '# Count by genomic region':
+                    recordingType = False
+                    recordingRegion = True
+                elif line[:1] == '#':
+                    recordingType = recordingRegion = False
+                if recordingType or recordingRegion:
                     if line.count(',') >= 2:
                         (effect_type, count, percent) = line.split(' , ', 2)
                         if count.isdigit():
                             effect_type_nice = effect_type.replace('_', ' ').title().replace('Utr', 'UTR')
                             count = float(count)
                             percent = float(percent[:-1])
-                            types[effect_type] = effect_type_nice
-                            counts[effect_type] = count
-                            percents[effect_type] = percent
+                            if recordingType:
+                                types[effect_type] = effect_type_nice
+                                type_counts[effect_type] = count
+                                type_percents[effect_type] = percent
+                            if recordingRegion:
+                                regions[effect_type] = effect_type_nice
+                                region_counts[effect_type] = count
+                                region_percents[effect_type] = percent
     except IOError as e:
         logging.error("Could not load input file: {}".format(fn))
         raise IOError(e)
     
-    # Check that we found something
-    if len(counts) == 0:
-        raise EOFError ("Unable to find any effect type counts in input file")
+    # Plot the "Types" graph
+    if len(type_counts) == 0:
+        logging.warning("Unable to find any effect type counts in input file")
+    else:
+        plot_snpEff_graph(types, type_counts, type_percents, output_fn+'_types', 'SNP Effects by Type', logx)
     
+    # Plot the "Regions" graph
+    if len(region_counts) == 0:
+        logging.warning("Unable to find any region counts in input file")
+    else:
+        plot_snpEff_graph(regions, region_counts, region_percents, output_fn+'_regions', 'SNP Effects by Region', logx) 
+
+def plot_snpEff_graph(types, counts, percents, output_fn, title, logx):
     # Prepare the sorted values
     plt_labels = []
     plt_counts = []
@@ -106,7 +127,7 @@ def plot_snpEff (summary_fn, output_fn='effect_types', logx=False):
     ax2.set_xticklabels(ax2_labels)
     
     # Labels
-    plt.text(0.5, 1.1, 'SNP Effects', horizontalalignment='center',
+    plt.text(0.5, 1.1, title, horizontalalignment='center',
                     fontsize=16, transform=axes.transAxes)
     matplotlib.rcParams['mathtext.default'] = 'regular'
     axes.set_xlabel(r"Number of Effects")
