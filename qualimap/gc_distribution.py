@@ -18,7 +18,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
-def plot_genome_fraction_coverage (gc_distribution_input, output_fn='gc_distribution', min_x='None', max_x='None'):
+def plot_genome_fraction_coverage (gc_distribution_input, output_fn='gc_distribution', min_x='None', max_x='None', reference_label='Reference Genome (hg19)'):
     """
     Main function. Takes input file and makes a plot.
     """
@@ -65,10 +65,13 @@ def plot_genome_fraction_coverage (gc_distribution_input, output_fn='gc_distribu
     axes = fig.add_subplot(111)
     [i.set_linewidth(0.5) for i in axes.spines.itervalues()] # thinner border
     
-    # Plot
+    # Plot the histogram
     axes.bar(x1, y1, width=1, linewidth=0.5, color="#decbe4")
+    
+    # Plot the reference, if we have it
     if len(y2) > 1:
-        axes.plot(x2, y2, 'r--')
+        axes.plot(x2, y2, 'r--', label=reference_label)
+        axes.legend(prop={'size':8}, frameon=False, handlelength=2.5)
 
     # Set axis limit if we need to
     if min_x is not None and max_x is not None:
@@ -111,6 +114,8 @@ if __name__ == "__main__":
                         help="Minimum x axis limit. Use 'None' for data limit. Default: None")
     parser.add_argument("-m", "--max_x", dest="max_x", default='100',
                             help="Maximum x axis limit. Use 'None' for data limit. Default: None")
+    parser.add_argument("-r", "--ref_label", dest="reference_label", default='Reference Genome (hg19)',
+                            help="Legend for the reference data if present. Default: 'Reference Genome (hg19)'")                        
     parser.add_argument("-l", "--log", dest="log_level", default='info', choices=['debug', 'info', 'warning'],
                         help="Level of log messages to display")
     parser.add_argument("-u", "--log-output", dest="log_output", default='stdout',

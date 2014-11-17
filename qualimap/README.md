@@ -59,6 +59,7 @@ Command Line Flag | Description
 `-x`, `--min_x` | Default:  _varies_<br>Minimum x limit. `None` to use data limit.
 `-m`, `--max_x` | Default:  _varies_<br>Maximum x limit. `None` to use data limit.
 `-b`, `--bin_size` | Default: `10`<br>Bin size for histogram.  Insert Size Histogram only.
+`-r`, `--ref_label` | Default: `Reference Genome (hg19)`<br>Legend for the reference data if present. GC distribution plot only.
 `-l`, `--log` | Default: `info`<br>Level of log messages to display. Can be `debug`, `info` or `warning`.
 `-u`, `--log-output` | Default: `stdout`<br>Log output filename.
 `-h`, `--help` | Display the help.
