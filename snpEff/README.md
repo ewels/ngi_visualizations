@@ -8,10 +8,8 @@ some plots which are a little easier on the eyes..
 
 ## Example Output
 
-Regions plot:
 ![Effect Type Plot](../examples/snpEff_effect_regions.png)
 
-Types plot:
 ![Effect Type Plot](../examples/snpEff_effect_types.png)
 
 ## Usage
@@ -20,7 +18,7 @@ This plot takes the summarised `snpEff_summary.csv` output from
 
     snpEff_plots.py snpEff_summary.csv
 
-A plot will be generated from the SNP effects by type and by region.
+Two plots will be generated from the SNP effects - by type and by region.
 
 ## Parameters
 Command Line Flag | Description

@@ -16,6 +16,12 @@ different aspect ratio and so on.
 
 ![Coverage Histogram](../examples/qualimap_coverage.png)
 
+## Insert Size Histogram
+Replacement plot for the Qualimap
+[Insert Size Histogram](http://kokonech.github.io/qualimap/HG00096.chr20_bamqc/images_qualimapReport/genome_insert_size_histogram.png).
+
+![Insert Size Histogram](../examples/qualimap_insertsize.png)
+
 ## Genome Fraction Coverage
 Replacement plot for the Qualimap
 [Genome Fraction Coverage Histogram](http://kokonech.github.io/qualimap/HG00096.chr20_bamqc/images_qualimapReport/genome_coverage_quotes.png).
@@ -32,10 +38,10 @@ Replacement plot for the Qualimap
 These scripts work on the command line and take the raw Qualimap output as
 inputs:
 
-    coverage_histogram.py coverage_histogram.txt
-    insert_size.py insert_size_histogram.txt
-    genome_fraction_coverage.py genome_fraction_coverage.txt
-    gc_distribution.py mapped_reads_gc-content_distribution.txt
+    coverage_histogram.py _coverage_histogram.txt_
+    insert_size.py _insert_size_histogram.txt_
+    genome_fraction_coverage.py _genome_fraction_coverage.txt_
+    gc_distribution.py _mapped_reads_gc-content_distribution.txt_
 
 All of these `.txt` files are generated
 by [Qualimap](http://qualimap.bioinfo.cipf.es/) and can typically be found in
@@ -43,15 +49,15 @@ by [Qualimap](http://qualimap.bioinfo.cipf.es/) and can typically be found in
 
 
 ## Parameters
-Parameters are very similar, so shown in one table. Defaults are for the
-coverage histogram and insert size histograms, respectively.
+Parameters are very similar, so shown in one table. Run the script with
+`-h` to see more details, including default values.
 
 Command Line Flag | Description
 ----------------- | -------------------- | -----------
 `<input>` | Required.<br>Qualimap output. See above.
 `-o`, `--output` | Default: _varies_<br>Plot output filename base. 
-`-x`, `--min_x` | Default: `0` or `None`<br>Minimum x limit. `None` to use data limit.
-`-m`, `--max_x` | Default: `60` or `None`<br>Maximum x limit. `None` to use data limit.
+`-x`, `--min_x` | Default:  _varies_<br>Minimum x limit. `None` to use data limit.
+`-m`, `--max_x` | Default:  _varies_<br>Maximum x limit. `None` to use data limit.
 `-b`, `--bin_size` | Default: `10`<br>Bin size for histogram.  Insert Size Histogram only.
 `-l`, `--log` | Default: `info`<br>Level of log messages to display. Can be `debug`, `info` or `warning`.
 `-u`, `--log-output` | Default: `stdout`<br>Log output filename.

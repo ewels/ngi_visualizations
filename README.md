@@ -67,7 +67,7 @@ See below for example outputs. Click an image to go to that script.
 
 <table>
   <tr>
-    <th><a href="qualimap/" colspan="2">Qualimap Plots</a></th>
+    <th colspan="2"><a href="qualimap/">Qualimap Plots</a></th>
   </tr>
   <tr>
     <td width="50%">
