@@ -55,6 +55,10 @@ def plot_insert_size_histogram (insertsize_data, output_fn='insert_size', min_x=
         logging.error("Could not load input file: {}".format(fn))
         raise IOError(e)
     
+    # Check that we found something
+    if len(y) == 0:
+        raise EOFError ("Unable to find any data in input file")
+    
     mean_insert_size = suminsertsize / totalcounts
     
     # Set up the plot

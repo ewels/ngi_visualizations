@@ -23,14 +23,10 @@ def plot_coverage_histogram (coverage_data, output_fn='coverage', min_x='0', max
     Main function. Takes input file and makes a plot.
     """
     # Sort out the incoming variables
-    if min_x.isdigit():
-        min_x = int(min_x)
-    else:
-        min_x = None
-    if max_x.isdigit():
-        max_x = int(max_x)
-    else:
-        max_x = None
+    if min_x.isdigit(): min_x = int(min_x)
+    else: min_x = None
+    if max_x.isdigit(): max_x = int(max_x)
+    else: max_x = None
     
     # Load in the data
     fn = os.path.realpath(coverage_data)
@@ -54,6 +50,10 @@ def plot_coverage_histogram (coverage_data, output_fn='coverage', min_x='0', max
     except IOError as e:
         logging.error("Could not load input file: {}".format(fn))
         raise IOError(e)
+        
+    # Check that we found something
+    if len(y) == 0:
+        raise EOFError ("Unable to find any data in input file")
     
     mean_coverage = sumcoverage / totalcounts
     
