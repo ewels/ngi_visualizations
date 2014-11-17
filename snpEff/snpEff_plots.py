@@ -73,7 +73,7 @@ def plot_snpEff (summary_fn, output_fn='effect_types', logx=False):
     if logx:
         min_x = 1
     ypos = numpy.arange(1, len(plt_labels)+1)
-    axes.bar(min_x, 0.8, plt_counts, ypos, log=logx, orientation='horizontal', linewidth=0.5, color="#fbb4ae")
+    axes.bar(min_x, 0.8, plt_counts, ypos, log=logx, orientation='horizontal', linewidth=0.5, color="#fed9a6")
 
     # Y axis
     axes.set_yticks(ypos+0.3)
