@@ -162,7 +162,7 @@ If you intend to make any changes to the package, swap `install` for `develop`,
 else you will have to reinstall the package each time you change the source code.
 
 Once installed, you can import the script from the relevant subdirectory. For instance,
-to use the Qualimap Insert Size historgram you would use:
+to use the [Qualimap Insert Size histogram](ngi_visualizations/qualimap/) you would use:
 
 ```python
 from ngi_visulaizations.qualimap import insert_size
@@ -176,12 +176,12 @@ insert_size.plot_insert_size_histogram(input_fn)
 ```
 
 
-### Contributing
+## Contributing
 If you would like to add a visualization script to this repository, please
 read the [contributing notes](CONTRIBUTING.md) first. These describe the
 steps required in adding your script to the repository.
 
-### Credits
+## Credits
 These scripts were written for use at the 
 [National Genomics Infrastructure](https://portal.scilifelab.se/genomics/)
 at [SciLifeLab](http://www.scilifelab.se/) in Stockholm, Sweden.
