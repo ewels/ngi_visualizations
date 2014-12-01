@@ -17,9 +17,9 @@ Additional options allow you to interrogate coverage on different reference
 strands and within regions of interest, as specified by a BED file.
 
 ## Example Output
-![Bismark Coverage Curves Plot](../examples/coverageStats.png)
+![Bismark Coverage Curves Plot](../../examples/coverageStats.png)
 
-See additional [text output](../examples/coverageStats.txt)
+See additional [text output](../../examples/coverageStats.txt)
 
 
 ## Usage
@@ -86,11 +86,11 @@ threshold for a window to be counted as well as restricting the
 windows to those overlapping regions of interest, as specified by a BED file.
 
 ## Example Output
-![Bismark Window Sizes Plot](../examples/windowSizes_wholeGenome.png)
+![Bismark Window Sizes Plot](../../examples/windowSizes_wholeGenome.png)
 
-![Bismark Window Sizes Plot](../examples/windowSizes_roi.png)
+![Bismark Window Sizes Plot](../../examples/windowSizes_roi.png)
 
-See additional text output: [first plot](../examples/windowSizes_wholeGenome.txt), [second plot](../examples/windowSizes_roi.txt)
+See additional text output: [first plot](../../examples/windowSizes_wholeGenome.txt), [second plot](../../examples/windowSizes_roi.txt)
 
 ## Usage
 
@@ -142,7 +142,7 @@ part of a larger repository of
 For more information, please get in touch with
 [Phil Ewels](https://github.com/ewels).
 
-<p align="center"><a href="http://www.scilifelab.se/" target="_blank"><img src="../examples/SciLifeLab_logo.png" title="SciLifeLab"></a></p>
+<p align="center"><a href="http://www.scilifelab.se/" target="_blank"><img src="../../examples/SciLifeLab_logo.png" title="SciLifeLab"></a></p>
 
 
 

@@ -18,10 +18,10 @@ for more information.
 
 ## Example output
 Plotting points with read counts versus interpolated unique read counts (from preseq):
-![Just read counts](../examples/complexity_curves_readcounts.png)
+![Just read counts](../../examples/complexity_curves_readcounts.png)
 
 Plotting points with read counts versus deduplicated read counts (using Picard):
-![Read counts and unique reads](../examples/complexity_curves_PicardDups.png)
+![Read counts and unique reads](../../examples/complexity_curves_PicardDups.png)
 
 ## Usage
 
@@ -87,5 +87,5 @@ part of a larger repository of
 For more information, please get in touch with
 [Phil Ewels](https://github.com/ewels).
 
-<p align="center"><a href="http://www.scilifelab.se/" target="_blank"><img src="../examples/SciLifeLab_logo.png" title="SciLifeLab"></a></p>
+<p align="center"><a href="http://www.scilifelab.se/" target="_blank"><img src="../../examples/SciLifeLab_logo.png" title="SciLifeLab"></a></p>
 

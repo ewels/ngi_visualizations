@@ -30,16 +30,16 @@ See below for example outputs. Click an image to go to that script.
 
 <table>
   <tr>
-    <th colspan="2"><a href="count_biotypes/">Count Biotypes</a></th>
+    <th colspan="2"><a href="stand_alone/count_biotypes/">Count Biotypes</a></th>
   </tr>
   <tr>
     <td width="50%">
-      <a href="count_biotypes/" title="Count Biotypes">
+      <a href="stand_alone/count_biotypes/" title="Count Biotypes">
         <img src="examples/SRR1304304_trimmed_aligned_biotypeCounts.png">
       </a>
     </td>
     <td>
-      <a href="count_biotypes/" title="Count Biotypes">
+      <a href="stand_alone/count_biotypes/" title="Count Biotypes">
         <img src="examples/SRR1304304_trimmed_aligned_biotypeLengths.png">
       </a>
     </td>
@@ -48,17 +48,17 @@ See below for example outputs. Click an image to go to that script.
 
 <table>
   <tr>
-    <th><a href="preseq_complexity_curves/">preseq Complexity Curves</a></th>
-    <th><a href="subsampled_gene_observations/">Subsampled Gene Observations</a></th>
+    <th><a href="stand_alone/preseq_complexity_curves/">preseq Complexity Curves</a></th>
+    <th><a href="stand_alone/subsampled_gene_observations/">Subsampled Gene Observations</a></th>
   </tr>
   <tr>
     <td width="50%">
-      <a href="preseq_complexity_curves/" title="preseq Complexity Curves">
+      <a href="stand_alone/preseq_complexity_curves/" title="preseq Complexity Curves">
         <img src="examples/complexity_curves_readcounts.png">
       </a>
     </td>
     <td>
-      <a href="subsampled_gene_observations/" title="Subsampled Gene Observations">
+      <a href="stand_alone/subsampled_gene_observations/" title="Subsampled Gene Observations">
         <img src="examples/subsampled_gene_observations.png">
       </a>
     </td>
@@ -67,22 +67,22 @@ See below for example outputs. Click an image to go to that script.
 
 <table>
   <tr>
-    <th colspan="2"><a href="qualimap/">Qualimap Plots</a></th>
+    <th colspan="2"><a href="stand_alone/qualimap/">Qualimap Plots</a></th>
   </tr>
   <tr>
     <td width="50%">
-      <a href="qualimap/" title="Coverage Histogram">
+      <a href="ngi_visualizations/qualimap/" title="Coverage Histogram">
         <img src="examples/qualimap_coverage.png">
       </a>
-      <a href="qualimap/" title="Insert Size Histogram">
+      <a href="ngi_visualizations/qualimap/" title="Insert Size Histogram">
         <img src="examples/qualimap_insertsize.png">
       </a>
     </td>
     <td>
-      <a href="qualimap/" title="Genome Fraction Coverage">
+      <a href="ngi_visualizations/qualimap/" title="Genome Fraction Coverage">
         <img src="examples/genome_fraction.png">
       </a>
-      <a href="qualimap/" title="GC Distribution">
+      <a href="ngi_visualizations/qualimap/" title="GC Distribution">
         <img src="examples/gc_distribution.png">
       </a>
     </td>
@@ -90,15 +90,15 @@ See below for example outputs. Click an image to go to that script.
 </table>
 <table>
   <tr>
-    <th colspan="2"> <a href="snpEff/">snpEff Effect Plots</a></th>
+    <th colspan="2"> <a href="stand_alone/snpEff/">snpEff Effect Plots</a></th>
   </tr>
     <td width="50%">
-      <a href="snpEff/" title="snpEff Effect Regions Plot">
+      <a href="ngi_visualizations/snpEff/" title="snpEff Effect Regions Plot">
         <img src="examples/snpEff_effect_regions.png">
       </a>
     </td>
     <td>
-      <a href="snpEff/" title="snpEff Effect Type Plot">
+      <a href="ngi_visualizations/snpEff/" title="snpEff Effect Type Plot">
         <img src="examples/snpEff_effect_types.png">
       </a>
     </td>
@@ -107,17 +107,17 @@ See below for example outputs. Click an image to go to that script.
 
 <table>
   <tr>
-    <th><a href="gene_body_coverage/">Gene Body Coverage</a></th>
-    <th><a href="alignment_summaries/">Alignment Summaries</a></th>
+    <th><a href="stand_alone/gene_body_coverage/">Gene Body Coverage</a></th>
+    <th><a href="stand_alone/alignment_summaries/">Alignment Summaries</a></th>
   </tr>
   <tr>
     <td width="50%">
-      <a href="gene_body_coverage/" title="Gene Body Coverage">
+      <a href="stand_alone/gene_body_coverage/" title="Gene Body Coverage">
         <img src="examples/geneBodyCoverage.png">
       </a>
     </td>
     <td>
-      <a href="alignment_summaries/" title="Alignment Summaries">
+      <a href="stand_alone/alignment_summaries/" title="Alignment Summaries">
         <img src="examples/bowtie_align_screenshot.png">
       </a>
     </td>
@@ -126,17 +126,17 @@ See below for example outputs. Click an image to go to that script.
 
 <table>
   <tr>
-    <th><a href="bismark/#bismark-coverage-curves">Bismark Coverage Curves</a></th>
-    <th><a href="bismark/#bismark-window-sizes">Bismark Window Sizes</a></th>
+    <th><a href="stand_alone/bismark/#bismark-coverage-curves">Bismark Coverage Curves</a></th>
+    <th><a href="stand_alone/bismark/#bismark-window-sizes">Bismark Window Sizes</a></th>
   </tr>
   <tr>
     <td width="50%">
-      <a href="bismark/#bismark-coverage-curves" title="Bismark Coverage Curves">
+      <a href="stand_alone/bismark/#bismark-coverage-curves" title="Bismark Coverage Curves">
         <img src="examples/coverageStats.png">
       </a>
     </td>
     <td>
-      <a href="bismark/#bismark-window-sizes" title="Bismark Window Sizes">
+      <a href="stand_alone/bismark/#bismark-window-sizes" title="Bismark Window Sizes">
         <img src="examples/windowSizes_roi.png">
       </a>
     </td>
@@ -155,4 +155,4 @@ at [SciLifeLab](http://www.scilifelab.se/) in Stockholm, Sweden.
 For more information, please get in touch with
 [Phil Ewels](https://github.com/ewels).
 
-<p align="center"><a href="http://www.scilifelab.se/" target="_blank"><img src="examples/SciLifeLab_logo.png" title="SciLifeLab"></a></p>
+<p align="center"><a href="stand_alone/http://www.scilifelab.se/" target="_blank"><img src="examples/SciLifeLab_logo.png" title="SciLifeLab"></a></p>

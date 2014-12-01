@@ -17,7 +17,7 @@ The package is comprised of four scripts which must be run separately:
 in SciLifeLab, and will require modification to run on different systems.
 
 ## Example output
-![Subsampled gene observations](../examples/subsampled_gene_observations.png)
+![Subsampled gene observations](../../examples/subsampled_gene_observations.png)
 
 ## Step 1: Subsample the BAM files
 ```bash
@@ -124,7 +124,7 @@ part of a larger repository of
 For more information, please get in touch with
 [Phil Ewels](https://github.com/ewels).
 
-<p align="center"><a href="http://www.scilifelab.se/" target="_blank"><img src="../examples/SciLifeLab_logo.png" title="SciLifeLab"></a></p>
+<p align="center"><a href="http://www.scilifelab.se/" target="_blank"><img src="../../examples/SciLifeLab_logo.png" title="SciLifeLab"></a></p>
 
 
 

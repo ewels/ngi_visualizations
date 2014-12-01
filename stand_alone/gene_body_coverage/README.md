@@ -5,7 +5,7 @@ A simple script to take the output from the
 `geneBody_coverage.py` script and plot this on single graph (png and pdf).
 
 ## Example output
-![gene body coverage](../examples/geneBodyCoverage.png)
+![gene body coverage](../../examples/geneBodyCoverage.png)
 
 ## Usage
 This tool is a python script and should be run on the command line as follows:
@@ -46,7 +46,7 @@ part of a larger repository of
 For more information, please get in touch with
 [Phil Ewels](https://github.com/ewels).
 
-<p align="center"><a href="http://www.scilifelab.se/" target="_blank"><img src="../examples/SciLifeLab_logo.png" title="SciLifeLab"></a></p>
+<p align="center"><a href="http://www.scilifelab.se/" target="_blank"><img src="../../examples/SciLifeLab_logo.png" title="SciLifeLab"></a></p>
 
 
 
