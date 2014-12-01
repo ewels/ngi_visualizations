@@ -6,8 +6,8 @@ file with examples and instructions.
 
 Most of these scripts are written in Python. Those within the `stand_alone`
 are generally run on the command line. The rest can either be run on the command
-line or imported as part of the `ngi_visualizations` package. Usage instructions
-for both methods can be found in the documentation.
+line or imported as part of the `ngi_visualizations` package. See
+[below](#usage) for instructions on how to use the python package.
 
 * [Count Biotypes](stand_alone/count_biotypes/)
 	* Uses HTSeq to plot read overlaps with different feature biotype flags
@@ -30,7 +30,7 @@ for both methods can be found in the documentation.
 	* [Bismark Coverage Curves](stand_alone/bismark/#bismark-coverage-curves) - Plots the proportion of cytosines meeting increasing coverage thresholds
 	* [Bismark Window Sizes](stand_alone/bismark/#bismark-window-sizes) - Plots the proportion of windows passing observation thresholds with increasing window sizes
 
-### Examples
+## Examples
 See below for example outputs. Click an image to go to that script.
 
 <table>
@@ -147,6 +147,34 @@ See below for example outputs. Click an image to go to that script.
     </td>
   </tr>
 </table>
+
+## Usage
+For using stand alone packages see the `README.md` file in that package's subdirectory.
+
+To use the `ngi_visulaizations` package, download or clone the repository.
+Then, to install the package, run:
+
+```
+python setup.py install
+```
+
+If you intend to make any changes to the package, swap `install` for `develop`,
+else you will have to reinstall the package each time you change the source code.
+
+Once installed, you can import the script from the relevant subdirectory. For instance,
+to use the Qualimap Insert Size historgram you would use:
+
+```python
+from ngi_visulaizations.qualimap import insert_size
+```
+
+The functions within this script are then available in that namespace. For instance,
+you could now generate the histograms by running:
+
+```python
+insert_size.plot_insert_size_histogram(input_fn)
+```
+
 
 ### Contributing
 If you would like to add a visualization script to this repository, please
