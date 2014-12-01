@@ -53,7 +53,7 @@ These scripts were written for use at the
 [National Genomics Infrastructure](https://portal.scilifelab.se/genomics/)
 at [SciLifeLab](http://www.scilifelab.se/) in Stockholm, Sweden. They are 
 part of a larger repository of
-[Visualization Scripts](https://github.com/SciLifeLab/visualizations).
+[NGI Visualization Scripts](https://github.com/SciLifeLab/ngi_visualizations).
 
 For more information, please get in touch with
 [Phil Ewels](https://github.com/ewels).

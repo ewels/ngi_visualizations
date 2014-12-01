@@ -1,8 +1,13 @@
-# Visualizations
+# NGI Visualizations
 
 A collection of next-gen sequencing visualisation scripts. Click a script's
 name to go to it's subdirectory which will contain a detailed `README.md`
 file with examples and instructions.
+
+Most of these scripts are written in Python. Those within the `stand_alone`
+are generally run on the command line. The rest can either be run on the command
+line or imported as part of the `ngi_visualizations` package. Usage instructions
+for both methods can be found in the documentation.
 
 * [Count Biotypes](stand_alone/count_biotypes/)
 	* Uses HTSeq to plot read overlaps with different feature biotype flags

@@ -14,25 +14,25 @@ Replacement plot for the Qualimap
 Essentially just stylistic changes - larger axis labels, different colours,
 different aspect ratio and so on.
 
-![Coverage Histogram](../examples/qualimap_coverage.png)
+![Coverage Histogram](../../examples/qualimap_coverage.png)
 
 ## Insert Size Histogram
 Replacement plot for the Qualimap
 [Insert Size Histogram](http://kokonech.github.io/qualimap/HG00096.chr20_bamqc/images_qualimapReport/genome_insert_size_histogram.png).
 
-![Insert Size Histogram](../examples/qualimap_insertsize.png)
+![Insert Size Histogram](../../examples/qualimap_insertsize.png)
 
 ## Genome Fraction Coverage
 Replacement plot for the Qualimap
 [Genome Fraction Coverage Histogram](http://kokonech.github.io/qualimap/HG00096.chr20_bamqc/images_qualimapReport/genome_coverage_quotes.png).
 
-![Insert Size Histogram](../examples/genome_fraction.png)
+![Insert Size Histogram](../../examples/genome_fraction.png)
 
 ## GC Distribution
 Replacement plot for the Qualimap
 [Mapped Reads GC-contentent Distribution Plot](http://kokonech.github.io/qualimap/HG00096.chr20_bamqc/images_qualimapReport/genome_gc_content_per_window.png).
 
-![Insert Size Histogram](../examples/gc_distribution.png)
+![Insert Size Histogram](../../examples/gc_distribution.png)
 
 ### Picard - Normalised Coverage
 This script can also plot the normalised coverage of each GC content bin
@@ -41,7 +41,7 @@ The script is a bit busy, so we might not use it much, but the functionality
 is there if you need it. Specify the Picard output file with the `--picard`
 command line flag.
 
-![Insert Size Histogram with Coverage](../examples/gc_distribution_normCoverage.png)
+![Insert Size Histogram with Coverage](../../examples/gc_distribution_normCoverage.png)
 
 ## Usage
 These scripts work on the command line and take the raw Qualimap output as
@@ -91,9 +91,9 @@ These scripts were written for use at the
 [National Genomics Infrastructure](https://portal.scilifelab.se/genomics/)
 at [SciLifeLab](http://www.scilifelab.se/) in Stockholm, Sweden. They are 
 part of a larger repository of
-[Visualization Scripts](https://github.com/SciLifeLab/visualizations).
+[NGI Visualization Scripts](https://github.com/SciLifeLab/ngi_visualizations).
 
 For more information, please get in touch with
 [Phil Ewels](https://github.com/ewels).
 
-<p align="center"><a href="http://www.scilifelab.se/" target="_blank"><img src="../examples/SciLifeLab_logo.png" title="SciLifeLab"></a></p>
+<p align="center"><a href="http://www.scilifelab.se/" target="_blank"><img src="../../examples/SciLifeLab_logo.png" title="SciLifeLab"></a></p>
