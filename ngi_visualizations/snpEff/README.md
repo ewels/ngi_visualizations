@@ -8,9 +8,9 @@ some plots which are a little easier on the eyes..
 
 ## Example Output
 
-![Effect Type Plot](../examples/snpEff_effect_regions.png)
+![Effect Type Plot](../../examples/snpEff_effect_regions.png)
 
-![Effect Type Plot](../examples/snpEff_effect_types.png)
+![Effect Type Plot](../../examples/snpEff_effect_types.png)
 
 ## Usage
 This plot takes the summarised `snpEff_summary.csv` output from
@@ -48,9 +48,9 @@ These scripts were written for use at the
 [National Genomics Infrastructure](https://portal.scilifelab.se/genomics/)
 at [SciLifeLab](http://www.scilifelab.se/) in Stockholm, Sweden. They are 
 part of a larger repository of
-[Visualization Scripts](https://github.com/SciLifeLab/visualizations).
+[NGI Visualization Scripts](https://github.com/SciLifeLab/ngi_visualizations).
 
 For more information, please get in touch with
 [Phil Ewels](https://github.com/ewels).
 
-<p align="center"><a href="http://www.scilifelab.se/" target="_blank"><img src="../examples/SciLifeLab_logo.png" title="SciLifeLab"></a></p>
+<p align="center"><a href="http://www.scilifelab.se/" target="_blank"><img src="../../examples/SciLifeLab_logo.png" title="SciLifeLab"></a></p>

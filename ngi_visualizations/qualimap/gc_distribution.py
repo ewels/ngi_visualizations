@@ -135,7 +135,8 @@ def plot_genome_fraction_coverage (gc_distribution_input, output_fn='gc_distribu
     matplotlib.rcParams['mathtext.default'] = 'regular'
     axes.set_xlabel(r"% GC Content")
     axes.set_ylabel(r'Percentage of Library')
-    ax2.set_ylabel(r'Normalised Coverage')
+    if len(y3) > 1:
+        ax2.set_ylabel(r'Normalised Coverage')
     
     # SAVE OUTPUT
     png_fn = "{}.png".format(output_fn)
