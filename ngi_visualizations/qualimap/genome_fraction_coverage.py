@@ -34,6 +34,7 @@ def plot_genome_fraction_coverage (fraction_data, output_fn='genome_fraction', m
     y = [100]
     eighty_pc_coverage = 0
     thirty_x_pc = 100
+    max_obs_x = 0
     try:
         with open(fn, 'r') as fh:
             next(fh) # skip the header
@@ -48,6 +49,8 @@ def plot_genome_fraction_coverage (fraction_data, output_fn='genome_fraction', m
                     eighty_pc_coverage = coverage
                 if coverage <= 30 and thirty_x_pc > percentage:
                     thirty_x_pc = percentage
+                if coverage > max_obs_x:
+                    max_obs_x = coverage
 
     except IOError as e:
         logging.error("Could not load input file: {}".format(fn))
@@ -66,6 +69,8 @@ def plot_genome_fraction_coverage (fraction_data, output_fn='genome_fraction', m
     axes.bar(x, y, width=1, linewidth=0.5, color="#fbb4ae")
 
     # Set axis limit if we need to
+    if max_x > max_obs_x:
+        max_x = max_obs_x
     if min_x is not None and max_x is not None:
         axes.set_xlim([min_x, max_x])
     elif min_x is not None:
