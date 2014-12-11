@@ -106,6 +106,9 @@ def plot_genome_fraction_coverage (fraction_data, output_fn='genome_fraction', m
     logging.info("Saving to {} and {}".format(png_fn, pdf_fn))
     plt.savefig(png_fn)
     plt.savefig(pdf_fn)
+    
+    # Close the plot
+    plt.close(fig)
 
 
 

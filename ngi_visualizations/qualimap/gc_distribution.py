@@ -151,6 +151,9 @@ def plot_genome_fraction_coverage (gc_distribution_input, output_fn='gc_distribu
     logging.info("Saving to {} and {}".format(png_fn, pdf_fn))
     plt.savefig(png_fn)
     plt.savefig(pdf_fn)
+    
+    # Close the plot
+    plt.close(fig)
 
 
 

@@ -164,6 +164,7 @@ def plot_complexity_curves(ccurves, real_counts_path=False, output_name='complex
     pdf_fn = "{}.pdf".format(output_name)
     plt.savefig(png_fn)
     plt.savefig(pdf_fn)
+    plt.close(fig)
     return 0
 
 def computeLimit(value, ccurve_TOTAL_READS):

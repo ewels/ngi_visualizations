@@ -101,7 +101,9 @@ def plot_coverage_histogram (coverage_data, output_fn='coverage', min_x='0', max
     logging.info("Saving to {} and {}".format(png_fn, pdf_fn))
     plt.savefig(png_fn)
     plt.savefig(pdf_fn)
-
+    
+    # Close the plot
+    plt.close(fig)
 
 
 
