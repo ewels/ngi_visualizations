@@ -23,10 +23,14 @@ def plot_genome_fraction_coverage (fraction_data, output_fn='genome_fraction', m
     Main function. Takes input file and makes a plot.
     """
     # Sort out the incoming variables
-    if min_x.isdigit(): min_x = int(min_x)
-    else: min_x = None
-    if max_x.isdigit(): max_x = int(max_x)
-    else: max_x = None
+    try:
+        min_x = int(min_x)
+    except ValueError, TypeError:
+        min_x = None
+    try:
+        max_x = int(max_x)
+    except ValueError, TypeError:
+        max_x = None
     
     # Load in the data
     fn = os.path.realpath(fraction_data)
