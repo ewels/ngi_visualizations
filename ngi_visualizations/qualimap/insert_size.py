@@ -23,10 +23,14 @@ def plot_insert_size_histogram (insertsize_data, output_fn='insert_size', min_x=
     Main function. Takes input file and makes a plot.
     """
     # Sort out the incoming variables
-    if min_x.isdigit(): min_x = int(min_x)
-    else: min_x = None
-    if max_x.isdigit(): max_x = int(max_x)
-    else: max_x = None
+    try:
+        min_x = int(min_x)
+    except ValueError, TypeError:
+        min_x = None
+    try:
+        max_x = int(max_x)
+    except ValueError, TypeError:
+        max_x = None
         
     # Load in the data
     fn = os.path.realpath(insertsize_data)
