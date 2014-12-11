@@ -111,7 +111,10 @@ def plot_genome_fraction_coverage (gc_distribution_input, output_fn='gc_distribu
     # Plot a legend if we need it
     if len(y2) > 1 or len(y3) > 1:
         labs = [l.get_label() for l in lns]
-        leg = ax2.legend(lns, labs, prop={'size':8}, handlelength=2.5)
+        if len(y3) > 1:
+            leg = ax2.legend(lns, labs, prop={'size':8}, handlelength=2.5)
+        else:
+            leg = axes.legend(lns, labs, prop={'size':8}, handlelength=2.5)
         leg.get_frame().set_linewidth(0.0)
 
     # Set axis limit if we need to
