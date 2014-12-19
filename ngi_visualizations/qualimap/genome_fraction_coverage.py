@@ -129,9 +129,9 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--output", dest="output_fn", default='genome_fraction',
                         help="Plot output filename base. Default: genome_fraction.png / .pdf")
     parser.add_argument("-x", "--min_x", dest="min_x", default='None',
-                        help="Minimum x axis limit. Use 'None' for data limit or 'Auto' for 2 * 50th percentile coverage. Default: Auto")
+                        help="Minimum x axis limit. Use 'None' for data limit. Default: None")
     parser.add_argument("-m", "--max_x", dest="max_x", default='Auto',
-                            help="Maximum x axis limit. Use 'None' for data limit. Default: None")
+                            help="Maximum x axis limit. Use 'None' for data limit or 'Auto' for 2 * 50th percentile coverage. Default: Auto")
     parser.add_argument("-l", "--log", dest="log_level", default='info', choices=['debug', 'info', 'warning'],
                         help="Level of log messages to display")
     parser.add_argument("-u", "--log-output", dest="log_output", default='stdout',
