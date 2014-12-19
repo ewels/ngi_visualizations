@@ -18,7 +18,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
-def plot_insert_size_histogram (insertsize_data, output_fn='insert_size', min_x='None', max_x='None', bin_size=10):
+def plot_insert_size_histogram (insertsize_data, output_fn='insert_size', min_x='None', max_x='Auto', bin_size=10):
     """
     Main function. Takes input file and makes a plot.
     """
@@ -30,40 +30,61 @@ def plot_insert_size_histogram (insertsize_data, output_fn='insert_size', min_x=
     try:
         max_x = int(max_x)
     except ValueError, TypeError:
-        max_x = None
+        if max_x == 'None':
+            max_x = None
+        else:
+            max_x = False
         
     # Load in the data
     fn = os.path.realpath(insertsize_data)
-    x = []
-    y = []
-    totalcounts = 0
-    suminsertsize = 0
+    counts = {}
     try:
         with open(fn, 'r') as fh:
             next(fh) # skip the header
-            thesecounts = 0
             for line in fh:
                 (insertsize, count) = line.split(None, 1)
                 insertsize = int(round(float(insertsize)))
                 count = float(count) / 1000000
-                totalcounts += count
-                suminsertsize += (count * insertsize)
-                if (min_x is None or insertsize >= min_x) and (max_x is None or insertsize <= max_x):
-                    thesecounts += count
-                    if insertsize % bin_size == 0:
-                        x.append(insertsize)
-                        y.append(thesecounts)
-                        thesecounts = 0
+                counts[insertsize] = count
 
     except IOError as e:
         logging.error("Could not load input file: {}".format(fn))
         raise IOError(e)
     
+    # Find mean
+    num_counts = sum(counts.values())
+    mean_insert_size = sum([ins * cov for (ins, cov) in counts.iteritems()]) / num_counts
+    
+    # Find median
+    cum_counts = 0
+    median_insert_size = None
+    for thisins, thiscount in counts.iteritems():
+        cum_counts += thiscount
+        if cum_counts >= num_counts/2:
+            median_insert_size = thisins
+            break
+    
+    # Set max_x automatically if we want to
+    if max_x == False and median_insert_size is not None:
+        max_x = median_insert_size * 2
+    
+    # Collect the x and y points that we need and ignore the ones that we don't
+    x = []
+    y = []
+    bincounts = 0
+    for thisins, thiscount in counts.iteritems():
+        if (min_x is None or thisins >= min_x) and (max_x is None or thisins <= max_x):
+            bincounts += thiscount
+            if thisins % bin_size == 0:
+                x.append(thisins)
+                y.append(bincounts)
+                bincounts = 0
+        elif max_x is not None and thisins > max_x:
+            break
+    
     # Check that we found something
     if len(y) == 0:
         raise EOFError ("Unable to find any data in input file")
-    
-    mean_insert_size = suminsertsize / totalcounts
     
     # Set up the plot
     fig = plt.figure(figsize=(8,3.4), tight_layout={'rect':(0,0.04,1,1)})
@@ -97,7 +118,7 @@ def plot_insert_size_histogram (insertsize_data, output_fn='insert_size', min_x=
     matplotlib.rcParams['mathtext.default'] = 'regular'
     plt.xlabel(r"Insert Size (bp)")
     plt.ylabel(r'Number of Reads ($\times 10^6$)')
-    plt.text(0.5, -0.25, 'Average Insert Size: {:.0f} bp'.format(mean_insert_size),
+    plt.text(0.5, -0.25, 'Mean Insert Size: {:.0f} bp'.format(mean_insert_size),
                 horizontalalignment='center', fontsize=8, transform = axes.transAxes)
 
     # SAVE OUTPUT
@@ -120,8 +141,8 @@ if __name__ == "__main__":
                         help="Plot output filename base. Default: insert_size.png / .pdf")
     parser.add_argument("-x", "--min_x", dest="min_x", default='None',
                         help="Minimum x axis limit. Use 'None' for data limit. Default: None")
-    parser.add_argument("-m", "--max_x", dest="max_x", default='None',
-                            help="Maximum x axis limit. Use 'None' for data limit. Default: None")
+    parser.add_argument("-m", "--max_x", dest="max_x", default='Auto',
+                            help="Maximum x axis limit. Use 'None' for data limit or 'Auto' for 2 * median. Default: Auto")
     parser.add_argument("-b", "--bin_size", dest="bin_size", type=int, default=10,
                             help="Histogram bin size. Default: 10 bp")
     parser.add_argument("-l", "--log", dest="log_level", default='info', choices=['debug', 'info', 'warning'],
