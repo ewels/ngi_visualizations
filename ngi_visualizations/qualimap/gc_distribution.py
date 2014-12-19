@@ -126,6 +126,7 @@ def plot_genome_fraction_coverage (gc_distribution_input, output_fn='gc_distribu
         axes.set_xlim(right=max_x)
 
     # Tidy the axes
+    axes.set_xlim([0, 100])
     axes.tick_params(which='both', labelsize=8, direction='out', top=False, right=False)
     axes.grid(True, zorder=0, which='both', axis='y', linestyle='-', color='#EDEDED', linewidth=1)
     axes.set_axisbelow(True)
