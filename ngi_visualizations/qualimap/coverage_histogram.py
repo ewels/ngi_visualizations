@@ -18,7 +18,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
-def plot_coverage_histogram (coverage_data, output_fn='coverage', min_x='0', max_x='60'):
+def plot_coverage_histogram (coverage_data, output_fn='coverage', min_x='0', max_x='Auto'):
     """
     Main function. Takes input file and makes a plot.
     """
