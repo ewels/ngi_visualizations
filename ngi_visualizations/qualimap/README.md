@@ -47,10 +47,10 @@ command line flag.
 These scripts work on the command line and take the raw Qualimap output as
 inputs:
 
-    coverage_histogram.py _coverage_histogram.txt_
-    insert_size.py _insert_size_histogram.txt_
-    genome_fraction_coverage.py _genome_fraction_coverage.txt_
-    gc_distribution.py _mapped_reads_gc-content_distribution.txt_
+    coverage_histogram.py <coverage_histogram.txt>
+    insert_size.py <insert_size_histogram.txt>
+    genome_fraction_coverage.py <genome_fraction_coverage.txt>
+    gc_distribution.py <mapped_reads_gc-content_distribution.txt>
 
 All of these `.txt` files are generated
 by [Qualimap](http://qualimap.bioinfo.cipf.es/) and can typically be found in
@@ -66,7 +66,7 @@ Command Line Flag | Description
 `<input>` | Required.<br>Qualimap output. See above.
 `-o`, `--output` | Default: _varies_<br>Plot output filename base. 
 `-x`, `--min_x` | Default:  _varies_<br>Minimum x limit. `None` to use data limit.
-`-m`, `--max_x` | Default:  _varies_<br>Maximum x limit. `None` to use data limit.
+`-m`, `--max_x` | Default:  _varies_<br>Maximum x limit. `None` to use data limit or `Auto` to try to set intelligently (based on median / 50th percentile).
 `-b`, `--bin_size` | Default: `10`<br>Bin size for histogram.  Insert Size Histogram only.
 `-r`, `--ref_label` | Default: `Reference Genome (hg19)`<br>Legend for the reference data if present. GC distribution plot only.
 `-p`, `--picard` | Default: `None`<br>Input file with results from `Picard CollectGcBiasMetrics` for optional coverage line. GC distribution plot only.
