@@ -365,6 +365,9 @@ def plot_bars(biotype_count_dict, output_basename, title="Annotation Biotype Ali
     fig.savefig(png_fn)
     fig.savefig(pdf_fn)
     
+    # Close the plot
+    plt.close(fig)
+    
     # Return the filenames
     return {'png': png_fn, 'pdf': pdf_fn}
 
@@ -532,6 +535,9 @@ def plot_epic_histogram(biotype_count_dict, output_basename, title="Annotation B
     logging.info("Saving to {} and {}".format(png_fn, pdf_fn))
     fig.savefig(png_fn)
     fig.savefig(pdf_fn)
+    
+    # Close the plot
+    plt.close(fig)
     
     # Return the filenames
     return {'png': png_fn, 'pdf': pdf_fn}

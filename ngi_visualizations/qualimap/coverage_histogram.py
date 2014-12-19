@@ -18,7 +18,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
-def plot_coverage_histogram (coverage_data, output_fn='coverage', min_x='0', max_x='60'):
+def plot_coverage_histogram (coverage_data, output_fn='coverage', min_x='0', max_x='Auto'):
     """
     Main function. Takes input file and makes a plot.
     """
@@ -30,14 +30,14 @@ def plot_coverage_histogram (coverage_data, output_fn='coverage', min_x='0', max
     try:
         max_x = int(max_x)
     except ValueError, TypeError:
-        max_x = None
+        if max_x == 'None':
+            max_x = None
+        else:
+            max_x = False
     
     # Load in the data
     fn = os.path.realpath(coverage_data)
-    x = []
-    y = []
-    totalcounts = 0
-    sumcoverage = 0
+    counts={}
     try:
         with open(fn, 'r') as fh:
             next(fh) # skip the header
@@ -45,21 +45,43 @@ def plot_coverage_histogram (coverage_data, output_fn='coverage', min_x='0', max
                 (coverage, count) = line.split(None, 1)
                 coverage = int(round(float(coverage)))
                 count = float(count)
-                totalcounts += count
-                sumcoverage += (count * coverage)
-                if (min_x is None or coverage >= min_x) and (max_x is None or coverage <= max_x):
-                    x.append(coverage)
-                    y.append(count)
+                counts[coverage] = count
+                
 
     except IOError as e:
         logging.error("Could not load input file: {}".format(fn))
         raise IOError(e)
-        
+    
+    # Find mean
+    num_counts = sum(counts.values())
+    mean_coverage = sum([cou * cov for (cou, cov) in counts.iteritems()]) / num_counts
+    
+    # Find median
+    cum_counts = 0
+    median_coverage = None
+    for thiscov, thiscount in counts.iteritems():
+        cum_counts += thiscount
+        if cum_counts >= num_counts/2:
+            median_coverage = thiscov
+            break
+    
+    # Set max_x automatically if we want to
+    if max_x == False and median_coverage is not None:
+        max_x = median_coverage * 2
+    
+    # Collect the x and y points that we need and ignore the ones that we don't
+    x = []
+    y = []
+    for thiscov, thiscount in counts.iteritems():
+        if (min_x is None or thiscov >= min_x) and (max_x is None or thiscov <= max_x):
+            x.append(thiscov)
+            y.append(thiscount)
+        elif max_x is not None and thiscov > max_x:
+            break
+    
     # Check that we found something
     if len(y) == 0:
-        raise EOFError ("Unable to find any data in input file")
-    
-    mean_coverage = sumcoverage / totalcounts
+        raise EOFError ("Unable to find any data in input file within coverage range")
     
     # Set up the plot
     fig = plt.figure(figsize=(8,3.4), tight_layout={'rect':(0,0.04,1,1)})
@@ -92,7 +114,7 @@ def plot_coverage_histogram (coverage_data, output_fn='coverage', min_x='0', max
     matplotlib.rcParams['mathtext.default'] = 'regular'
     plt.xlabel(r"Coverage")
     plt.ylabel(r'Genome Bin Counts')
-    plt.text(0.5, -0.25, 'Average Coverage: {0:.2f}X'.format(mean_coverage),
+    plt.text(0.5, -0.25, 'Mean Coverage: {0:.2f}X'.format(mean_coverage),
                 horizontalalignment='center', fontsize=8, transform = axes.transAxes)
 
     # SAVE OUTPUT
@@ -101,7 +123,9 @@ def plot_coverage_histogram (coverage_data, output_fn='coverage', min_x='0', max
     logging.info("Saving to {} and {}".format(png_fn, pdf_fn))
     plt.savefig(png_fn)
     plt.savefig(pdf_fn)
-
+    
+    # Close the plot
+    plt.close(fig)
 
 
 
@@ -112,8 +136,8 @@ if __name__ == "__main__":
                         help="Plot output filename base. Default: coverage.png / .pdf")
     parser.add_argument("-x", "--min_x", dest="min_x", default='0',
                         help="Minimum x axis limit. Use 'None' for data limit. Default: 0")
-    parser.add_argument("-m", "--max_x", dest="max_x", default='60',
-                            help="Maximum x axis limit. Use 'None' for data limit. Default: 60")
+    parser.add_argument("-m", "--max_x", dest="max_x", default='Auto',
+                            help="Maximum x axis limit. Use 'None' for data limit or 'Auto' for 2 * median. Default: Auto")
     parser.add_argument("-l", "--log", dest="log_level", default='info', choices=['debug', 'info', 'warning'],
                         help="Level of log messages to display")
     parser.add_argument("-u", "--log-output", dest="log_output", default='stdout',

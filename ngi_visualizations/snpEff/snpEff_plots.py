@@ -139,6 +139,9 @@ def plot_snpEff_graph(types, counts, percents, output_fn, title, logx):
     logging.info("Saving to {} and {}".format(png_fn, pdf_fn))
     plt.savefig(png_fn)
     plt.savefig(pdf_fn)
+    
+    # Close the plot
+    plt.close(fig)
 
 
 

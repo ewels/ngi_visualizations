@@ -69,6 +69,9 @@ def plot_gene_body_coverage (coverage_files, output_fn='geneBodyCoverage'):
     plt.savefig(png_fn)
     plt.savefig(pdf_fn)
     
+    # Close the plot
+    plt.close(fig)
+    
     
 if __name__ == "__main__":
     # Command line arguments

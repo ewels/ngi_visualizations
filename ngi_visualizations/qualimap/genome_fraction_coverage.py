@@ -18,7 +18,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
-def plot_genome_fraction_coverage (fraction_data, output_fn='genome_fraction', min_x='None', max_x='None'):
+def plot_genome_fraction_coverage (fraction_data, output_fn='genome_fraction', min_x='None', max_x='Auto'):
     """
     Main function. Takes input file and makes a plot.
     """
@@ -30,15 +30,19 @@ def plot_genome_fraction_coverage (fraction_data, output_fn='genome_fraction', m
     try:
         max_x = int(max_x)
     except ValueError, TypeError:
-        max_x = None
+        if max_x == 'None':
+            max_x = None
+        else:
+            max_x = False
     
     # Load in the data
     fn = os.path.realpath(fraction_data)
-    x = [0]
-    y = [100]
     eighty_pc_coverage = 0
     thirty_x_pc = 100
     max_obs_x = 0
+    halfway_cov = None
+    x = [0]
+    y = [100]
     try:
         with open(fn, 'r') as fh:
             next(fh) # skip the header
@@ -46,20 +50,26 @@ def plot_genome_fraction_coverage (fraction_data, output_fn='genome_fraction', m
                 (coverage, percentage) = line.split(None, 1)
                 coverage = int(round(float(coverage)))
                 percentage = float(percentage)
-                if (min_x is None or coverage >= min_x) and (max_x is None or coverage <= max_x):
-                    x.append(coverage)
-                    y.append(percentage)
+                # Set max_x automatically if we want to
+                if halfway_cov is None and percentage <= 50:
+                    halfway_cov = coverage
+                    if max_x == False:
+                        max_x = halfway_cov * 2
                 if percentage >= 80 and eighty_pc_coverage < coverage:
                     eighty_pc_coverage = coverage
                 if coverage <= 30 and thirty_x_pc > percentage:
                     thirty_x_pc = percentage
                 if coverage > max_obs_x:
                     max_obs_x = coverage
+                # Collect plotting variables
+                if (min_x is None or coverage >= min_x) and (max_x is None or max_x is False or coverage <= max_x):
+                    x.append(coverage)
+                    y.append(percentage)
 
     except IOError as e:
         logging.error("Could not load input file: {}".format(fn))
         raise IOError(e)
-    
+
     # Check that we found something
     if len(y) == 1:
         raise EOFError ("Unable to find any data in input file")
@@ -106,6 +116,9 @@ def plot_genome_fraction_coverage (fraction_data, output_fn='genome_fraction', m
     logging.info("Saving to {} and {}".format(png_fn, pdf_fn))
     plt.savefig(png_fn)
     plt.savefig(pdf_fn)
+    
+    # Close the plot
+    plt.close(fig)
 
 
 
@@ -117,8 +130,8 @@ if __name__ == "__main__":
                         help="Plot output filename base. Default: genome_fraction.png / .pdf")
     parser.add_argument("-x", "--min_x", dest="min_x", default='None',
                         help="Minimum x axis limit. Use 'None' for data limit. Default: None")
-    parser.add_argument("-m", "--max_x", dest="max_x", default='None',
-                            help="Maximum x axis limit. Use 'None' for data limit. Default: None")
+    parser.add_argument("-m", "--max_x", dest="max_x", default='Auto',
+                            help="Maximum x axis limit. Use 'None' for data limit or 'Auto' for 2 * 50th percentile coverage. Default: Auto")
     parser.add_argument("-l", "--log", dest="log_level", default='info', choices=['debug', 'info', 'warning'],
                         help="Level of log messages to display")
     parser.add_argument("-u", "--log-output", dest="log_output", default='stdout',
