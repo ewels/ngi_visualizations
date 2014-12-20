@@ -25,11 +25,11 @@ def plot_genome_fraction_coverage (gc_distribution_input, output_fn='gc_distribu
     # Sort out the incoming variables
     try:
         min_x = int(min_x)
-    except ValueError, TypeError:
+    except (ValueError, TypeError):
         min_x = None
     try:
         max_x = int(max_x)
-    except ValueError, TypeError:
+    except (ValueError, TypeError):
         max_x = None
     
     # Load in the data
@@ -58,7 +58,7 @@ def plot_genome_fraction_coverage (gc_distribution_input, output_fn='gc_distribu
 
     except IOError as e:
         logging.error("Could not load input file: {}".format(fn))
-        raise IOError(e)
+        raise
     
     # Check that we found something
     if len(y1) == 1:

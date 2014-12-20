@@ -25,11 +25,11 @@ def plot_coverage_histogram (coverage_data, output_fn='coverage', min_x='0', max
     # Sort out the incoming variables
     try:
         min_x = int(min_x)
-    except ValueError, TypeError:
+    except (ValueError, TypeError):
         min_x = None
     try:
         max_x = int(max_x)
-    except ValueError, TypeError:
+    except (ValueError, TypeError):
         if max_x == 'None':
             max_x = None
         else:
@@ -50,7 +50,7 @@ def plot_coverage_histogram (coverage_data, output_fn='coverage', min_x='0', max
 
     except IOError as e:
         logging.error("Could not load input file: {}".format(fn))
-        raise IOError(e)
+        raise
     
     # Find mean
     num_counts = sum(counts.values())
