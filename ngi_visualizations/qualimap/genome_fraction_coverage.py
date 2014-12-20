@@ -25,11 +25,11 @@ def plot_genome_fraction_coverage (fraction_data, output_fn='genome_fraction', m
     # Sort out the incoming variables
     try:
         min_x = int(min_x)
-    except ValueError, TypeError:
+    except (ValueError, TypeError):
         min_x = None
     try:
         max_x = int(max_x)
-    except ValueError, TypeError:
+    except (ValueError, TypeError):
         if max_x == 'None':
             max_x = None
         else:
@@ -68,7 +68,7 @@ def plot_genome_fraction_coverage (fraction_data, output_fn='genome_fraction', m
 
     except IOError as e:
         logging.error("Could not load input file: {}".format(fn))
-        raise IOError(e)
+        raise
 
     # Check that we found something
     if len(y) == 1:
