@@ -1,3 +1,11 @@
+#!/usr/bin/python
+"""
+preseq_complexity_curves.py
+
+Takes results preseq and plots complexity curves.
+"""
+
+
 import sys
 import os
 import yaml
