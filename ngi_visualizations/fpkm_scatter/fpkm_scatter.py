@@ -31,9 +31,6 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
     
     # First off, assume that we have two FPKM files from cufflinks
     if summary is False:
-        
-        logging.error("Error - this isn't written yet sorry.")
-        raise SystemExit
        
         # Parse the input files
         sample_1 = load_fpkm_counts(input_1)
@@ -42,6 +39,10 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
         # What are the sample names?
         sample_1_name = os.path.splitext(os.path.basename(input_1))[0]
         sample_2_name = os.path.splitext(os.path.basename(input_2))[0]
+        
+        # File name
+        if output_fn is None:
+            output_fn = "{}-{}".format(sample_1_name, sample_2_name)
 
         # Make the plot
         plot_filenames = plot_fpkm_scatter(sample_1, sample_2, sample_1_name, sample_2_name, output_fn=output_fn, linear=linear)
@@ -92,7 +93,7 @@ def load_fpkm_counts (file):
                 for line in fh:
                     line = line.strip()
                     cols = line.split("\t")
-                    gene_id = cols[2]
+                    gene_id = cols[0]
                     FPKM = cols[9]
                     counts[gene_id] = FPKM
         except IOError as e:
