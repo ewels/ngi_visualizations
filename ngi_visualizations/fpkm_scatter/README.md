@@ -15,7 +15,7 @@ log(FPKM) scores and calculate a correlation score. This is where this script st
 This tool is a python script and should be run on the command line as follows:
 
 ```bash
-python fpkm_scatter.py sample1.fpkm sample2.fpkm
+python fpkm_scatter.py sample1.fpkm_tracking sample2.fpkm_tracking
 ```
 
 If you have FPKM summary files that looks like this:

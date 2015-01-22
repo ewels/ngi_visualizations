@@ -2,9 +2,11 @@
 """
 fpkm_scatter.py
 
-Takes two FPKM files (eg. from cufflinks) and makes a scatter plot.
+Takes FPKM counts from two conditions and makes a scatter plot.
 Also calculates a r-squared correlation score.
 
+Either takes two Cufflinks FPKM summary files or a summary file
+with multiple samples.
 """
 
 from __future__ import print_function
@@ -222,7 +224,7 @@ def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear
     
 if __name__ == "__main__":
     # Command line arguments
-    parser = argparse.ArgumentParser("Make a scatter plot between two FPKM files")
+    parser = argparse.ArgumentParser("Make a scatter plot of FPKM counts between conditions")
     parser.add_argument("-s", "--summary", dest="summary", action='store_true',
                         help="Input files are summary FPKM files.")
     parser.add_argument("-o", "--output", dest="output_fn", default=None,
