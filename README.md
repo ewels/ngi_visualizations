@@ -113,7 +113,7 @@ See below for example outputs. Click an image to go to that script.
 <table>
   <tr>
     <th><a href="ngi_visualizations/gene_body_coverage/">Gene Body Coverage</a></th>
-    <th><a href="stand_alone/alignment_summaries/">Alignment Summaries</a></th>
+    <th><a href="ngi_visualizations/fpkm_scatter/">FPKM Scatter Plot</a></th>
   </tr>
   <tr>
     <td width="50%">
@@ -122,6 +122,18 @@ See below for example outputs. Click an image to go to that script.
       </a>
     </td>
     <td>
+      <a href="ngi_visualizations/fpkm_scatter/" title="FPKM Scatter Plot">
+        <img src="examples/fpkm_scatter.png">
+      </a>
+    </td>
+  </tr>
+</table>
+<table>
+  <tr>
+    <th colspan="2"><a href="stand_alone/alignment_summaries/">Alignment Summaries</a></th>
+  </tr>
+  <tr>
+    <td colspan="2">
       <a href="stand_alone/alignment_summaries/" title="Alignment Summaries">
         <img src="examples/bowtie_align_screenshot.png">
       </a>

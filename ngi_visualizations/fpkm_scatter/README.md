@@ -8,7 +8,7 @@ A simple and informative way to compare two samples is to make a scatter plot of
 log(FPKM) scores and calculate a correlation score. This is where this script steps in.
 
 ## Example output
-.. coming soon ..
+![FPKM Scatter Plot](../../examples/fpkm_scatter.png)
 
 ## Usage
 
