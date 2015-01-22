@@ -10,10 +10,10 @@ Also calculates a r-squared correlation score.
 from __future__ import print_function
 
 import argparse
-from collections import defaultdict
 import logging
-import numpy
+import numpy as np
 import os
+import re
 
 # Import matplot lib but avoid default X environment
 import matplotlib
@@ -57,15 +57,21 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
         cond_1_basename = os.path.splitext(os.path.basename(input_1))[0]
         cond_2_basename = os.path.splitext(os.path.basename(input_2))[0]
         
+        # Find project names from sample ID (P1234_*)
+        pname_re = re.compile('^P\d+_')
+        cond_1_proj = pname_re.search(condition_1.keys()[0]).group(0)
+        cond_2_proj = pname_re.search(condition_2.keys()[0]).group(0)
+        
         # Go through each sample pair
-        for sample in condition_1.keys():
+        for cond_1_sample in condition_1.keys():
             try:
-                sample_1_name = "{}_{}".format(cond_1_basename, sample)
-                sample_2_name = "{}_{}".format(cond_2_basename, sample)
-                outfile = "{}_{}_{}".format(cond_1_basename, cond_2_basename, sample)
-                plot_filenames = plot_fpkm_scatter(condition_1[sample], condition_2[sample], sample_1_name, sample_2_name, output_fn=outfile, linear=linear)
-            except NameError:
-                log.warning("Warning: Sample {} not found in {}".format(sample, condition_2_basename))
+                cond_2_sample = cond_1_sample.replace(cond_1_proj, cond_2_proj)
+                condition_2[cond_2_sample]
+                outfile = "{}_{}-{}_{}".format(cond_1_basename, cond_1_sample, cond_2_basename, cond_2_sample)
+                
+                plot_filenames = plot_fpkm_scatter(condition_1[cond_1_sample], condition_2[cond_2_sample], cond_1_sample, cond_2_sample, output_fn=outfile, linear=linear)
+            except KeyError:
+                logging.warning("Warning: Sample {} not found in {}".format(sample, cond_2_basename))
     
     
 def load_fpkm_counts (file):
@@ -107,7 +113,7 @@ def load_summary_fpkm_counts (file):
             counts[sample_name][gene_id] = fpkm_count
     """
     
-    counts = defaultdict(lambda: defaultdict(int))
+    counts = {}
     
     # ENSEMBL_ID    Gene_ID    Sample_1    Sample_2    Sample_3    Sample_4
     # ENSG00000000003    TSPAN6    0.1234    0.1234    0.1234    0.1234
@@ -118,6 +124,8 @@ def load_summary_fpkm_counts (file):
             with open(file, 'r') as fh:
                 header = fh.readline()
                 sample_names = header.split("\t")[2:]
+                for name in sample_names:
+                    counts[name] = {}
                 for line in fh:
                     sections = line.split("\t")
                     gene_id = sections[0]
@@ -143,25 +151,35 @@ def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear
     each sample.
     """
     
+    # Output filename
+    if output_fn is False:
+        output_fn = "{}_{}".format(x_lab, y_lab)
+    
     # SET UP PLOT
     fig = plt.figure()
-    axes = fig.add_subplot(111)
-    plt.subplots_adjust(right=0.7)
+    axes = fig.add_subplot(111, aspect=1.0)
     
     i = 0
     x_vals = []
     y_vals = []
     
     # Collect the paired FPKM counts
+    missing_genes = 0
     for gene in sample_1.keys():
         try:
-            x_val = sample_1[gene]
-            y_val = sample_2[gene]
+            sample_2[gene]
         except NameError:
-            continue
+            missing_genes += 1
         else:
-            x_vals.append(x_val)
-            y_vals.append(y_val)
+            x_vals.append(float(sample_1[gene]))
+            y_vals.append(float(sample_2[gene]))
+    if missing_genes > 0:
+        logging.warn("Warning: {} genes mentioned in sample 1 not found in sample 2".format(missing_genes))
+    
+    # Calculate the r squared    
+    corr = np.corrcoef(x_vals, y_vals)[0,1]
+    r_squared = corr ** 2
+    print ("R squared for {} = {}".format(output_fn, r_squared))
 
     # Make the plot
     axes.plot(x_vals, y_vals, 'o', markersize=1)
@@ -169,13 +187,26 @@ def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear
     plt.ylabel(y_lab)
     plt.title("FPKM Counts for {} and {}".format(x_lab, y_lab))
     
+    # Axes scales
+    x1,x2,y1,y2 = axes.axis()
+    max_xy = max(x2, y2)
+    if linear is True:
+        axes.set(xscale='log', xlim=[0,max_xy])
+        axes.set(yscale='log', ylim=[0,max_xy])        
+    else:
+        axes.set(xscale='log', xlim=[1,max_xy])
+        axes.set(yscale='log', ylim=[1,max_xy])
+    
     # Tidy axes
     axes.set_axisbelow(True)
     axes.tick_params(which='both', labelsize=8, direction='out', top=False, right=False)
     
+    # Add a label about r squared
+    plt.subplots_adjust(bottom=0.15)
+    plt.text(1, -0.15, r'$r^2$ = {:2f}'.format(r_squared),
+                horizontalalignment='right', fontsize=8, transform=axes.transAxes)
+    
     # SAVE OUTPUT
-    if output_fn is False:
-        output_fn = "{}_{}".format(x_lab, y_lab)
     png_fn = "{}.png".format(output_fn)
     pdf_fn = "{}.pdf".format(output_fn)
     logging.info("Saving to {} and {}".format(png_fn, pdf_fn))
