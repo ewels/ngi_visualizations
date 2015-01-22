@@ -86,23 +86,20 @@ def load_fpkm_counts (file):
     
     counts = {}
     logging.info("Processing {}".format(file))
-    if os.path.isfile(file):
-        try:
-            with open(file, 'r') as fh:
-                # Skip the header
-                next(fh)
-                # Iterate through the file
-                for line in fh:
-                    line = line.strip()
-                    cols = line.split("\t")
-                    gene_id = cols[0]
-                    FPKM = cols[9]
-                    counts[gene_id] = FPKM
-        except IOError as e:
-            logging.error("Error loading FPKM file: {}".format(file))
-            raise IOError(e)
-    else:
-        raise IOError("Couldn't find FPKM file: {}".format(file))
+    try:
+        with open(file, 'r') as fh:
+            # Skip the header
+            next(fh)
+            # Iterate through the file
+            for line in fh:
+                line = line.strip()
+                cols = line.split("\t")
+                gene_id = cols[0]
+                FPKM = cols[9]
+                counts[gene_id] = FPKM
+    except IOError as e:
+        logging.error("Error loading cufflinks FPKM file: {}\n{}".format(file, e))
+        raise IOError(e)
     
     return counts
 
@@ -122,23 +119,20 @@ def load_summary_fpkm_counts (file):
     # ENSG00000000003    TSPAN6    0.1234    0.1234    0.1234    0.1234
     
     # Read the counts file
-    if os.path.isfile(file):
-        try:
-            with open(file, 'r') as fh:
-                header = fh.readline()
-                sample_names = header.split("\t")[2:]
-                for name in sample_names:
-                    counts[name] = {}
-                for line in fh:
-                    sections = line.split("\t")
-                    gene_id = sections[0]
-                    for i in range(2, len(sections)-2):
-                        counts[sample_names[i]][gene_id] = sections[i]
-        except IOError as e:
-            logging.error("Error - could not find cufflinks log file: {}\n{}{}".format(log_path, e, err_suff))
-            return None
-    else:
-        raise IOError("Couldn't find FPKM file: {}".format(file))
+    try:
+        with open(file, 'r') as fh:
+            header = fh.readline()
+            sample_names = header.split("\t")[2:]
+            for name in sample_names:
+                counts[name] = {}
+            for line in fh:
+                sections = line.split("\t")
+                gene_id = sections[0]
+                for i in range(2, len(sections)-2):
+                    counts[sample_names[i]][gene_id] = sections[i]
+    except IOError as e:
+        logging.error("Error - could not read FPKM summary file: {}\n{}".format(file, e))
+        return None
             
     return counts
 
