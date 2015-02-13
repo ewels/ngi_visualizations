@@ -84,6 +84,7 @@ def plot_complexity_curves(ccurves, real_counts_path=False, output_name='complex
             global_x_max_ccurve_limit = x_max_ccurve_limit
         if ccurve_EXPECTED_DISTINCT[x_max_ccurve_limit] > global_y_max_ccurve_limit:
             global_y_max_ccurve_limit = ccurve_EXPECTED_DISTINCT[x_max_ccurve_limit]
+        x_max_ccurve_limit += 3 # Add a few points to be sure
         p, = ax.plot(ccurve_TOTAL_READS[x_min_ccurve_limit:x_max_ccurve_limit], ccurve_EXPECTED_DISTINCT[x_min_ccurve_limit:x_max_ccurve_limit])
         
         # Get the information for the legend
@@ -181,15 +182,18 @@ def computeLimit(value, ccurve_TOTAL_READS):
         sys.exit("Fatal Error: value is set to a value higher than the highest extrapolated point by preseq (value={}, ccurve_TOTAL_READS[-1]={}). Please specify a lower m-max.".format(value, ccurve_TOTAL_READS[-1]))
     first_point = 0
     last_point  = len(ccurve_TOTAL_READS)
+    iterations = 0
     while first_point != last_point:
         middle_point = (first_point + last_point)/2
         middle_value = ccurve_TOTAL_READS[middle_point]
-        if middle_value == value:
+        if middle_value == value or iterations >= 10000:
             return middle_point
         elif middle_value >= value:
             last_point = middle_point -1
         else:
             first_point = middle_point +1
+        iterations += 1
+        
     return first_point
 
 
