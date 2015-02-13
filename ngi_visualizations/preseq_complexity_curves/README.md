@@ -36,7 +36,7 @@ To the real data as points, a file contaning the read counts must be referenced
 using the `-r` argument. You can generate such a file using [samtools](http://www.htslib.org/)
 with the following command:
 ```
-echo "Sample_1 "$(samtools view -c -F 4 Sample_1.bam))
+echo "Sample_1 "$(samtools view -c -F 4 Sample_1.bam)
 ```
 
 If you would like to count two files - one with and one without duplicates,
