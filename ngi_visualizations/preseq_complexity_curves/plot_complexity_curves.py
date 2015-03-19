@@ -16,7 +16,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import numpy as np
 
-def plot_complexity_curves(ccurves, real_counts_path=False, output_name='complexity_curves', x_min=0, x_max=500000000):
+def plot_complexity_curves(ccurves, coverage=0, read_length=0, real_counts_path=False, output_name='complexity_curves', x_min=0, x_max=500000000):
     """
     This script plots the complexity curves generated for one or several libraries. The script is designed to work using
     the output produced by preseq (http://smithlabresearch.org/software/preseq/). preseq version 1.0.0 is currently
@@ -28,6 +28,15 @@ def plot_complexity_curves(ccurves, real_counts_path=False, output_name='complex
 
     if x_min < 0 or x_max <= x_min:
         sys.exit("problem with x-min or x-max ({}, {}). x-min must be equal or higher to 0 and less than x-max".format(x_min, x_max))
+
+    # Covert limit counts to coverage
+    if coverage > 0:
+        if read_length == 0:
+            raise RuntimeError ("Error: --coverage specified but not --read-length")
+        else:
+            coverage = float(coverage) / float(read_length)
+        x_max = float(x_max) / coverage
+        x_min = float(x_min) / coverage
 
     # Get the real counts if we have them
     real_counts_total = {}
@@ -50,6 +59,14 @@ def plot_complexity_curves(ccurves, real_counts_path=False, output_name='complex
         except IOError as e:
             print("Error loading real counts file: {}".format(real_counts_path))
             raise IOError(e)
+
+    # Covert real counts to coverage
+    if coverage > 0:
+        for f, c in real_counts_total.iteritems():
+            real_counts_total[f] = float(c) / coverage
+        for f, c in real_counts_unique.iteritems():
+            real_counts_unique[f] = float(c) / coverage
+
 
     # Set up plot params
     legend = [[],[]]
@@ -78,6 +95,11 @@ def plot_complexity_curves(ccurves, real_counts_path=False, output_name='complex
         else:
             sys.exit("Error, table {} is not in the expected format... has been generated with preseq?".format(ccurve))
 
+        # Covert real counts to coverage
+        if coverage > 0:
+            ccurve_TOTAL_READS = [float(c) / coverage for c in ccurve_TOTAL_READS]
+            ccurve_EXPECTED_DISTINCT = [float(c) / coverage for c in ccurve_EXPECTED_DISTINCT]
+
         # I need to find the interpolation point to print the plots
         x_min_ccurve_limit = computeLimit(x_min, ccurve_TOTAL_READS)
         x_max_ccurve_limit = computeLimit(x_max, ccurve_TOTAL_READS)
@@ -89,6 +111,8 @@ def plot_complexity_curves(ccurves, real_counts_path=False, output_name='complex
             x_max_ccurve_limit += 3 # Add a few points to be sure
         except IndexError:
             x_max_ccurve_limit = len(ccurve_EXPECTED_DISTINCT)
+
+        # Plot the curve
         p, = ax.plot(ccurve_TOTAL_READS[x_min_ccurve_limit:x_max_ccurve_limit], ccurve_EXPECTED_DISTINCT[x_min_ccurve_limit:x_max_ccurve_limit])
 
         # Get the information for the legend
@@ -112,7 +136,9 @@ def plot_complexity_curves(ccurves, real_counts_path=False, output_name='complex
         if sample_name_raw + ".bam" in real_counts_total:
             real_key = sample_name_raw + ".bam"
         if real_key:
-            t_reads = int(real_counts_total[real_key])
+
+            t_reads = float(real_counts_total[real_key])
+
             if real_key in real_counts_unique:
                 u_reads = int(real_counts_unique[real_key])
                 ax.plot(t_reads, u_reads, 'o', color=p.get_color())
@@ -125,7 +151,7 @@ def plot_complexity_curves(ccurves, real_counts_path=False, output_name='complex
                 else:
                     interp = np.interp(t_reads, xvalues, yvalues)
                     ax.plot(t_reads, interp, 'o', color=p.get_color())
-                    print "INFO: Found real count for {} - Total: {} (preseq unique reads: {})".format(sample_name, t_reads, int(interp))
+                    print "INFO: Found real count for {} - Total: {:.2f} (preseq unique reads: {:.2f})".format(sample_name, t_reads, interp)
 
     # plot perfect library as dashed line
     ax.plot([0, x_max], [0, x_max], color='black', linestyle='--', linewidth=1)
@@ -144,7 +170,12 @@ def plot_complexity_curves(ccurves, real_counts_path=False, output_name='complex
         max_unique += max_unique * 0.1
     preseq_ymax = global_y_max_ccurve_limit
     preseq_ymax += global_y_max_ccurve_limit * 0.1
-    plt.ylim(100000, max(preseq_ymax, max_unique))
+
+    default_ylim = 100000
+    if coverage > 0:
+        default_ylim = float(default_ylim) / coverage
+
+    plt.ylim(default_ylim, max(preseq_ymax, max_unique))
     if preseq_ymax < max_unique:
         print "WARNING: y-max value changed from default {} to the max real data {}".format(int(preseq_ymax), max_unique )
 
@@ -152,6 +183,12 @@ def plot_complexity_curves(ccurves, real_counts_path=False, output_name='complex
     plt.ylabel('Unique Molecules')
     plt.xlabel('Total Molecules (including duplicates)')
     plt.title("Complexity Curve: preseq")
+
+    # Change labels if we're using coverage
+    if coverage > 0:
+        plt.ylabel('Unique Coverage')
+        plt.xlabel('Total Coverage (including duplicates)')
+
     if len(real_counts_unique) > 0:
         plt.text(0.5, -0.15, 'Points show read count versus deduplicated read counts (externally calculated)',
             horizontalalignment='center', fontsize=8, transform = ax.transAxes)
@@ -209,6 +246,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser("plot_complexity_curves.py", description=plot_complexity_curves.__doc__)
     parser.add_argument('ccurves', metavar='<preseq file>', nargs='+',
         help="List of input files generated by preseq")
+    parser.add_argument('-c', '--coverage', dest='coverage', type=int, default=0,
+        help="Use coverage on axes instead of read counts. Enter number of base pairs of refernce. Human GRCh38.p2 = 3221487035, GRCh37 = 3137144693")
+    parser.add_argument('-l', '--read-length', dest='read_length', type=int, default=0,
+        help="Sequence read length, for use in coverage calculations")
     parser.add_argument('-r', '--real-counts', dest='real_counts_path', type=str, default=False,
         help="File name for file with three columns - BAM filename, total number reads, number of unique reads (space delimited)")
     parser.add_argument('-o', '--output-name', dest='output_name', type=str, default='complexity_curves',
