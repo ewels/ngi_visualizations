@@ -16,7 +16,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import numpy as np
 
-def plot_complexity_curves(ccurves, coverage=0, read_length=0, real_counts_path=False, output_name='complexity_curves', x_min=0, x_max=500000000):
+def plot_complexity_curves(ccurves, coverage=0, read_length=0, real_counts_path=False, use_unique=True, output_name='complexity_curves', x_min=0, x_max=500000000):
     """
     This script plots the complexity curves generated for one or several libraries. The script is designed to work using
     the output produced by preseq (http://smithlabresearch.org/software/preseq/). preseq version 1.0.0 is currently
@@ -48,17 +48,20 @@ def plot_complexity_curves(ccurves, coverage=0, read_length=0, real_counts_path=
                 for line in fh:
                     line = line.strip()
                     cols = line.split() # Split on any whitespace
-                    if cols[0] in ccurves:
-                        try:
-                            if cols[1].isdigit():
-                                real_counts_total[cols[0]] = int(cols[1])
-                            if cols[2].isdigit():
-                                real_counts_unique[cols[0]] = int(cols[2])
-                        except IndexError:
-                            pass
+                    for fn in [cols[0], "{}.preseq".format(cols[0]), "{}.bam".format(cols[0])]:
+                        if fn in ccurves:
+                            try:
+                                if cols[1].isdigit():
+                                    real_counts_total[fn] = int(cols[1])
+                                if cols[2].isdigit() and use_unique:
+                                    real_counts_unique[fn] = int(cols[2])
+                            except IndexError:
+                                pass
         except IOError as e:
             print("Error loading real counts file: {}".format(real_counts_path))
             raise IOError(e)
+        else:
+            print("Found {} matching sets of counts from {}".format(len(real_counts_total), real_counts_path))
 
     # Covert real counts to coverage
     if coverage > 0:
@@ -82,7 +85,7 @@ def plot_complexity_curves(ccurves, coverage=0, read_length=0, real_counts_path=
 
     # Go through inputs and plot line
     for ccurve in ccurves:
-        print "\nProcessing {}".format(ccurve)
+        print "Processing {}".format(ccurve)
         ccurve_table             = pd.io.parsers.read_csv(ccurve, sep='\t', header=0)
         ccurve_TOTAL_READS       = []
         ccurve_EXPECTED_DISTINCT = []
@@ -251,7 +254,9 @@ if __name__ == '__main__':
     parser.add_argument('-l', '--read-length', dest='read_length', type=int, default=0,
         help="Sequence read length, for use in coverage calculations")
     parser.add_argument('-r', '--real-counts', dest='real_counts_path', type=str, default=False,
-        help="File name for file with three columns - BAM filename, total number reads, number of unique reads (space delimited)")
+        help="File name for file with three columns - preseq filename, total number reads, number of unique reads (unique optional, whitespace delimited)")
+    parser.add_argument('-u', '--ignore_unique', dest='use_unique', action='store_false',
+        help="Ignore any information about unique read counts found in --real-counts file.")
     parser.add_argument('-o', '--output-name', dest='output_name', type=str, default='complexity_curves',
         help="Output name (.png will be automatically added)")
     parser.add_argument('-m', '--x-min', dest='x_min', type=int, default=0,
