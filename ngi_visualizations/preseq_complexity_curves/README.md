@@ -68,6 +68,7 @@ Command Line Flag | `plot_complexity_curves()` argument name | Description
 `-c`, `--coverage` | `coverage` | Default: none.<br>Plot coverage instead of read counts. Supply with reference genome length (bp).
 `-l`, `--read-length` | `read_length` | Default: none.<br>Length of sequenced reads, to be used with `--coverage`
 `-r`, `--real-counts` | `real_counts_path` | Default: none.<br>Path to file with read counts.
+`-u`, `--ignore_unique` | `use_unique` | Default: True.<br>Specify on cl to ignore unique reads found in `-r` file.
 `-o`, `--output-name` | `output_name` | Default: `complexity_curves`.<br>Output file name
 `-m`, `--x-min` | `x_min` | Default: `0`.<br>Minimum x axis limit.
 `-x`, `--x-max` | `x_max` | Default: 500 million.<br>Maximum x axis limit.
