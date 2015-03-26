@@ -19,9 +19,7 @@ for post-processing.
 
 ## Example Output
 ![Bismark Coverage Curves Plot](../../examples/bismark_summary_screenshot.png)
-See the full example report here: [bowtie_report.html](https://rawgit.com/ewels/visualizations/master/examples/bismark_summary_report.html)
-
-See also the additional [text output](../../examples/coverageStats.txt)
+See the full example report here: [bismark_summary_report.html](https://rawgit.com/ewels/visualizations/master/examples/bismark_summary_report.html)
 
 ## Usage
 
