@@ -21,7 +21,7 @@ for post-processing.
 ![Bismark Coverage Curves Plot](../../examples/bismark_summary_screenshot.png)
 See the full example report here: [bismark_summary_report.html](https://rawgit.com/ewels/visualizations/master/examples/bismark_summary_report.html)
 
-You can also see the tab-delimted text file here: [bismark_summary_report.html](../../examples/bismark_summary_report.txt)
+You can also see the tab-delimted text file here: [bismark_summary_report.txt](../../examples/bismark_summary_report.txt)
 
 ## Usage
 
