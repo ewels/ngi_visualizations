@@ -26,9 +26,11 @@ line or imported as part of the `ngi_visualizations` package. See
 * [Alignment Summaries](stand_alone/alignment_summaries/)
 	* Two scripts to parse log files containing alignment stats from bowtie,
 		bowtie 2 or tophat and generate overview HTML reports
-* [Bismark Addons](stand_alone/bismark/)
-	* [Bismark Coverage Curves](stand_alone/bismark/#bismark-coverage-curves) - Plots the proportion of cytosines meeting increasing coverage thresholds
-	* [Bismark Window Sizes](stand_alone/bismark/#bismark-window-sizes) - Plots the proportion of windows passing observation thresholds with increasing window sizes
+* [Bismark Summary Report](stand_alone/bismark_summary/)
+	* Script to parse lots of bismark output reports and generate a single HTML summary report.
+* [Bismark Coverage Analysis](stand_alone/bismark_coverage/)
+	* [Bismark Coverage Curves](stand_alone/bismark_coverage/#bismark-coverage-curves) - Plots the proportion of cytosines meeting increasing coverage thresholds
+	* [Bismark Window Sizes](stand_alone/bismark_coverage/#bismark-window-sizes) - Plots the proportion of windows passing observation thresholds with increasing window sizes
 
 ## Examples
 See below for example outputs. Click an image to go to that script.
@@ -130,12 +132,18 @@ See below for example outputs. Click an image to go to that script.
 </table>
 <table>
   <tr>
-    <th colspan="2"><a href="stand_alone/alignment_summaries/">Alignment Summaries</a></th>
+    <th><a href="stand_alone/alignment_summaries/">Alignment Summaries</a></th>
+    <th><a href="stand_alone/bismark_summary/">Bismark Summaries</a></th>
   </tr>
   <tr>
-    <td colspan="2">
+    <td width="50%">
       <a href="stand_alone/alignment_summaries/" title="Alignment Summaries">
         <img src="examples/bowtie_align_screenshot.png">
+      </a>
+    </td>
+	<td>
+      <a href="stand_alone/bismark_summary/" title="Bismark Summaries">
+        <img src="examples/bismark_summary_screenshot.png">
       </a>
     </td>
   </tr>
@@ -143,17 +151,17 @@ See below for example outputs. Click an image to go to that script.
 
 <table>
   <tr>
-    <th><a href="stand_alone/bismark/#bismark-coverage-curves">Bismark Coverage Curves</a></th>
-    <th><a href="stand_alone/bismark/#bismark-window-sizes">Bismark Window Sizes</a></th>
+    <th><a href="stand_alone/bismark_coverage/#bismark-coverage-curves">Bismark Coverage Curves</a></th>
+    <th><a href="stand_alone/bismark_coverage/#bismark-window-sizes">Bismark Window Sizes</a></th>
   </tr>
   <tr>
     <td width="50%">
-      <a href="stand_alone/bismark/#bismark-coverage-curves" title="Bismark Coverage Curves">
+      <a href="stand_alone/bismark_coverage/#bismark-coverage-curves" title="Bismark Coverage Curves">
         <img src="examples/coverageStats.png">
       </a>
     </td>
     <td>
-      <a href="stand_alone/bismark/#bismark-window-sizes" title="Bismark Window Sizes">
+      <a href="stand_alone/bismark_coverage/#bismark-window-sizes" title="Bismark Window Sizes">
         <img src="examples/windowSizes_roi.png">
       </a>
     </td>
@@ -194,7 +202,7 @@ read the [contributing notes](CONTRIBUTING.md) first. These describe the
 steps required in adding your script to the repository.
 
 ## Credits
-These scripts were written for use at the 
+These scripts were written for use at the
 [National Genomics Infrastructure](https://portal.scilifelab.se/genomics/)
 at [SciLifeLab](http://www.scilifelab.se/) in Stockholm, Sweden.
 For more information, please get in touch with
