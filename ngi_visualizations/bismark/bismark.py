@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm # colours
 
 
-def bismark(input_cov_list, min_cov=10):
+def bismark_analysis(input_cov_list, min_cov=10):
     """
     Run bismark comparison analysis - main function
     """
@@ -34,6 +34,10 @@ def bismark(input_cov_list, min_cov=10):
         if data is None:
             logging.error("Could not parse coverage file: {} Skipping..".format(fn))
             del (data[fn])
+
+    # Plot dendrogram
+    make_dendrogram(data)
+    os.exit(0)
 
     # Plot scatter plots
     for i in range(0, len(input_cov_list)-1):
@@ -51,6 +55,11 @@ def bismark(input_cov_list, min_cov=10):
 
 
 def load_bismark_gwCov(fn, min_cov=10):
+    """
+    Load a Bismark coverage file into memory. Takes normal coverage
+    or genome-wide coverage files. The former are much, *much* faster
+    to load.
+    """
     logging.info("Loading {}".format(fn))
     data = defaultdict(dict)
     i = 0
@@ -97,10 +106,9 @@ def load_bismark_gwCov(fn, min_cov=10):
 
 def plot_meth_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False):
     """
-    Plots scatter plot of FPKM counts. Also calculates r-squared correlation
-    and prints this to STDOUT as well as including it in the graph.
-    Input: 2 x counts[gene_id] = fpkm_count and 2 x sample names
-    Input: title=Plot title
+    Plots scatter plot of methylation score counts. Calculates r-squared
+    correlation and spearman's correlation coefficient scores
+    and prints these to STDOUT as well as including it in the graph.
     Returns a dict containing filenames of PNG and PDF graphs as a dict for
     each sample.
     """
@@ -198,11 +206,47 @@ def plot_meth_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False):
 
     # SAVE OUTPUT
     png_fn = "{}.png".format(output_fn)
+    pdf_fn = "{}.pdf".format(output_fn)
     logging.info("Saving to {}".format(png_fn))
     plt.savefig(png_fn)
+    logging.info("Saving to {}".format(pdf_fn))
+    plt.savefig(pdf_fn)
 
     # Return the filenames
-    return {'png': png_fn}
+    return {'png': png_fn, 'pdf': pdf_fn}
+
+
+
+def make_dendrogram(data, output_fn=False):
+    """
+    Plots a hierarchical clustering dendrogram
+    """
+
+    # Output filename
+    if output_fn is False:
+        output_fn = "sample_dendrogram"
+
+    # Count occurance of positions in datasets
+    keys = {}
+    for d in data.values():
+        for k in d.keys():
+            if k not in keys:
+                keys[k] = 1
+            else:
+                keys[k] += 1
+
+    shared_keys = 0
+    num_discarded = 0
+    for k,c in keys.iteritems():
+        if c == len(data):
+            shared_keys += 1
+            # TODO - make list of data points here or something
+        else:
+            num_discarded += 1
+    print ("{} shared, {} ignored".format(len(shared_keys), num_discarded))
+
+    # Calculate linkage
+    # linkage = cluster.hierarchy.linkage
 
 
 
@@ -227,5 +271,5 @@ if __name__ == "__main__":
     kwargs.pop('log_level', None)
     kwargs.pop('log_output', None)
 
-    # Call count_biotypes()
-    bismark(**kwargs)
+    # Call bismark_analysis()
+    bismark_analysis(**kwargs)
