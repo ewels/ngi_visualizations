@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm # colours
 
 
-def bismark_analysis(input_cov_list, min_cov=10):
+def bismark_analysis(input_cov_list, min_cov=10, fasta_ref=None, plot_scatters=None):
     """
     Run bismark comparison analysis - main function
     """
@@ -35,22 +35,36 @@ def bismark_analysis(input_cov_list, min_cov=10):
             logging.error("Could not parse coverage file: {} Skipping..".format(fn))
             del (data[fn])
 
+    # Build nicer sample names
+    sample_names = {}
+    for fn in input_cov_list:
+        name = os.path.basename(fn)
+        remove = ['_val_1', '_val_2', '.fq', '.gz', '_bismark', '_bt2', '_bt1', '_pe', '_se', '.deduplicated', '.bismark', '.gwCov', '.cov']
+        for r in remove:
+            name = name.replace(r, '')
+        sample_names[fn] = name
+
     # Plot dendrogram
-    make_dendrogram(data)
-    os.exit(0)
+    make_dendrogram(data, sample_names)
+
+    # Auto - only plot scatters if 4 or less samples (24 plots)
+    if plot_scatters is None:
+        samps = len(input_cov_list)
+        num_scatters = (samps**2)-((samps**2)/2)-(samps/2)
+        if num_scatters <= 24:
+            plot_scatters = True
+            logging.info("{} samples given, plotting {} scatter plots".format(samps, num_scatters))
+        else:
+            plot_scatters = False
+            logging.info("{} samples would give {} scatter plots, so skipping. Use '--scatter t' to force.".format(samps, num_scatters))
 
     # Plot scatter plots
-    for i in range(0, len(input_cov_list)-1):
-        for j in range(i+1, len(input_cov_list)):
-            x = input_cov_list[j]
-            y = input_cov_list[i]
-            x_name = os.path.basename(x)
-            y_name = os.path.basename(y)
-            remove = ['_val_1', '_val_2', '.fq', '.gz', '_bismark', '_bt2', '_bt1', '_pe', '_se', '.deduplicated', '.bismark', '.gwCov', '.cov']
-            for r in remove:
-                x_name = x_name.replace(r, '')
-                y_name = y_name.replace(r, '')
-            plot_meth_scatter(data[x], data[y], x_name, y_name)
+    if plot_scatters is True:
+        for i in range(0, len(input_cov_list)-1):
+            for j in range(i+1, len(input_cov_list)):
+                x = input_cov_list[j]
+                y = input_cov_list[i]
+                plot_meth_scatter(data[x], data[y], sample_names[x], sample_names[y])
 
 
 
@@ -104,6 +118,75 @@ def load_bismark_gwCov(fn, min_cov=10):
 
 
 
+def make_dendrogram(data, sample_names=False, output_fn=False, plot_title=False):
+    """
+    Plots a hierarchical clustering dendrogram
+    """
+
+    # Output filename
+    if output_fn is False:
+        output_fn = "sample_dendrogram"
+
+    # Find shared keys present in all datasets
+    shared_keys = list(set.intersection(* map(set, data.values())))
+
+    # How many did we see in total?
+    all_keys = list(set.union(* map(set, data.values())))
+
+    # Count and log - vars used later in plot too
+    num_total = len(all_keys)
+    num_shared = len(shared_keys)
+    skipped_keys = num_total - num_shared
+    percent_shared = (float(num_shared)/float(num_total))*100
+    percent_skipped = (float(skipped_keys)/float(num_total))*100
+    logging.info("Found {:.2e} ({:.0f}%) cytosines present in all datasets for dendrogram. Skipped {:.2e} ({:.0f}%) out of {:.2e} total observed.".format(num_shared, percent_shared, skipped_keys, percent_skipped, num_total))
+
+    # Build data array
+    df = []
+    dslabels = []
+    for fn, d in data.iteritems():
+        df.append([d[k]['methylation'] for k in shared_keys])
+        if sample_names is not False:
+            dslabels.append(sample_names[fn])
+        else:
+            dslabels.append(fn)
+
+    # Calculate linkage and plot dendrogram
+    fig = plt.figure(figsize=(12,4.5), tight_layout={'rect':(0,0.04,1,1)})
+    axes = plt.axes(frameon=False)
+    link = cluster.hierarchy.linkage(df, metric='correlation')
+    # Above threshold colour is hardcoded as blue. Valls put in a PR to scipy for this.
+    # Dev version has the attr now, let's use it if we can..
+    try:
+        den = cluster.hierarchy.dendrogram(link, count_sort=True, labels=dslabels, above_threshold_color='#AAAAAA')
+    except TypeError:
+        den = cluster.hierarchy.dendrogram(link, count_sort=True, labels=dslabels)
+
+    # Labels
+    if plot_title is False:
+        plot_title = "Sample Clustering by Methylation"
+    plt.title(plot_title)
+
+    # Formatting
+    axes.tick_params(right=False, axis='both', labelsize=6)
+    for label in axes.get_xticklabels():
+        label.set_rotation(90)
+
+    # Add a label about number of Cs used
+    plt.figtext(0.99, 0.03, r'Calculated using {:.2e} cytosines found in all samples ({:.0f}% of all seen)'.format(num_shared, percent_shared),
+                horizontalalignment='right', fontsize=6, transform=axes.transAxes)
+
+    # Save Plots
+    png_fn = "{}.png".format(output_fn)
+    pdf_fn = "{}.pdf".format(output_fn)
+    plt.savefig(png_fn)
+    plt.savefig(pdf_fn)
+
+    # Return the filenames
+    return {'png': png_fn, 'pdf': pdf_fn}
+
+
+
 def plot_meth_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False):
     """
     Plots scatter plot of methylation score counts. Calculates r-squared
@@ -117,9 +200,7 @@ def plot_meth_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False):
     if output_fn is False:
         output_fn = "{}_{}".format(y_lab, x_lab)
 
-    # SET UP PLOT
-    fig = plt.figure()
-    axes = fig.add_subplot(111, aspect=1.0)
+    # Set up variables
     x_vals = []
     y_vals = []
     all_x_vals = []
@@ -173,6 +254,8 @@ def plot_meth_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False):
     print ("Spearman's rank correlation coefficient for {} = {:.2f} (p < {:.2e})".format(output_fn, rho, pvalue))
 
     # Plot the histogram
+    fig = plt.figure(figsize=(8,7))
+    axes = fig.add_subplot(111, aspect=1.0)
     plt.hist2d(x_vals, y_vals, bins=200, norm=mpl.colors.LogNorm(), cmap=cm.Blues)
     cbar = plt.colorbar()
 
@@ -180,7 +263,7 @@ def plot_meth_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False):
     plt.xlabel(x_lab)
     plt.ylabel(y_lab)
     plt.title("CpG Methylation Percentages")
-    cbar.set_label('Log Cytosine Counts')
+    cbar.set_label('Cytosine Counts')
 
     # Axes scales
     axes.set(xlim=[0,100])
@@ -207,9 +290,7 @@ def plot_meth_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False):
     # SAVE OUTPUT
     png_fn = "{}.png".format(output_fn)
     pdf_fn = "{}.pdf".format(output_fn)
-    logging.info("Saving to {}".format(png_fn))
     plt.savefig(png_fn)
-    logging.info("Saving to {}".format(pdf_fn))
     plt.savefig(pdf_fn)
 
     # Return the filenames
@@ -217,42 +298,13 @@ def plot_meth_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False):
 
 
 
-def make_dendrogram(data, output_fn=False):
-    """
-    Plots a hierarchical clustering dendrogram
-    """
-
-    # Output filename
-    if output_fn is False:
-        output_fn = "sample_dendrogram"
-
-    # Count occurance of positions in datasets
-    keys = {}
-    for d in data.values():
-        for k in d.keys():
-            if k not in keys:
-                keys[k] = 1
-            else:
-                keys[k] += 1
-
-    shared_keys = 0
-    num_discarded = 0
-    for k,c in keys.iteritems():
-        if c == len(data):
-            shared_keys += 1
-            # TODO - make list of data points here or something
-        else:
-            num_discarded += 1
-    print ("{} shared, {} ignored".format(len(shared_keys), num_discarded))
-
-    # Calculate linkage
-    # linkage = cluster.hierarchy.linkage
-
-
-
 if __name__ == "__main__":
     # Command line arguments
     parser = argparse.ArgumentParser("Compare bismark methylation coverage data between samples")
+    parser.add_argument("-f", "--fasta", dest="fasta_ref",
+                        help="Genome Fasta reference for coverage analysis")
+    parser.add_argument("-s", "--scatter", dest="plot_scatters", default='auto', choices=['auto', 't', 'f'],
+                        help="Plot pairwise scatter plots? Auto = only if 4 or less samples (24 plots)")
     parser.add_argument("-l", "--log", dest="log_level", default='info', choices=['debug', 'info', 'warning'],
                         help="Level of log messages to display")
     parser.add_argument("-u", "--log-output", dest="log_output", default='stdout',
@@ -260,6 +312,11 @@ if __name__ == "__main__":
     parser.add_argument("input_cov_list", metavar='<cov file>', nargs="+",
                         help="List of input genome-wide coverage filenames")
     kwargs = vars(parser.parse_args())
+
+    # Scatter var munging
+    if kwargs['plot_scatters'] == 'auto': kwargs['plot_scatters'] = None
+    if kwargs['plot_scatters'] == 't': kwargs['plot_scatters'] = True
+    if kwargs['plot_scatters'] == 'f': kwargs['plot_scatters'] = False
 
     # Initialise logger
     numeric_log_level = getattr(logging, kwargs['log_level'].upper(), None)
