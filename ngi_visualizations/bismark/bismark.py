@@ -25,18 +25,24 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm # colours
 
+# Set the default color cycle
+mpl.rcParams['axes.color_cycle'] = ['#AAAAAA', '#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a', '#ffff99', '#b15928']
+# mpl.rcParams['axes.color_cycle'] = [list(clr) for clr in matplotlib.cm.brg(linspace(0,1,144))]
 
-def bismark_analysis(input_cov_list, min_cov=10, fasta_fn=None, regions_fn=False, plot_scatters=None):
+def bismark_analysis(input_cov_list, min_cov=10, fasta_fn=None, regions_fn=False, no_plot_scatters=False):
     """
     Run bismark comparison analysis - main function
     """
     # Load the data
     data = {}
+    alldata = {}
     for fn in input_cov_list:
-        data[fn] = load_bismark_cov(fn, min_cov)
+        alldata[fn], data[fn] = load_bismark_cov(fn, min_cov)
         if data is None:
             logging.error("Could not parse coverage file: {} Skipping..".format(fn))
             del (data[fn])
+            del (alldata[fn])
+            del (input_cov_list[fn])
 
     # Build nicer sample names
     sample_names = {}
@@ -45,21 +51,21 @@ def bismark_analysis(input_cov_list, min_cov=10, fasta_fn=None, regions_fn=False
         remove = ['_val_1', '_val_2', '.fq', '.gz', '_bismark', '_bt2', '_bt1', '_pe', '_se', '.deduplicated', '.bismark', '.gwCov', '.cov']
         for r in remove:
             name = name.replace(r, '')
+        name = name.rstrip('_1')
+        name = name.rstrip('_2')
         sample_names[fn] = name
 
     # Plot dendrogram
     make_dendrogram(data, min_cov, sample_names)
 
-    # Auto - only plot scatters if 4 or less samples (24 plots)
-    if plot_scatters is None:
-        samps = len(input_cov_list)
-        num_scatters = (samps**2)-((samps**2)/2)-(samps/2)
-        if num_scatters <= 10:
-            plot_scatters = True
-            logging.info("{} samples given, plotting {} scatter plots".format(samps, num_scatters))
-        else:
-            plot_scatters = False
-            logging.info("{} samples would give {} scatter plots, so skipping. Use '--scatter t' to force.".format(samps, num_scatters))
+    # Plot sample methylation histograms
+    logging.info("Making histogram for combined samples.")
+    plot_meth_histograms(data, sample_names)
+
+    # Make one meth histogram per sample
+    logging.info("Making one histogram per sample.")
+    for fn in data.keys():
+        plot_meth_histograms({fn: data[fn]}, {fn: sample_names[fn]}, output_fn="{}_histogram".format(sample_names[fn]))
 
     # Plot scatter plots and work out correlation scores
     rsquared = defaultdict(lambda: defaultdict(float))
@@ -68,7 +74,7 @@ def bismark_analysis(input_cov_list, min_cov=10, fasta_fn=None, regions_fn=False
         for j in range(i+1, len(input_cov_list)):
             x = input_cov_list[j]
             y = input_cov_list[i]
-            results = plot_meth_scatter(data[x], data[y], sample_names[x], sample_names[y], min_cov, plot_scatters)
+            results = plot_meth_scatter(data[x], data[y], sample_names[x], sample_names[y], min_cov, no_plot_scatters)
             rsquared[sample_names[x]][sample_names[y]] = results['r_squared']
             rho[sample_names[x]][sample_names[y]] = results['rho']
 
@@ -80,7 +86,7 @@ def bismark_analysis(input_cov_list, min_cov=10, fasta_fn=None, regions_fn=False
             regions = None
         (fasta_ref, captured_cgs) = load_fasta_cpg(fasta_fn, regions)
         total_cg_count = len(fasta_ref)
-        coverage_decay_plot(data, sample_names, total_cg_count, captured_cgs)
+        coverage_decay_plot(alldata, sample_names, total_cg_count, captured_cgs)
 
 
 def load_bismark_cov(fn, min_cov=10):
@@ -90,6 +96,7 @@ def load_bismark_cov(fn, min_cov=10):
     to load.
     """
     logging.info("Loading {}".format(fn))
+    alldata = defaultdict(dict)
     data = defaultdict(dict)
     try:
         with open(fn, 'r') as fh:
@@ -118,14 +125,17 @@ def load_bismark_cov(fn, min_cov=10):
                 chrom = c[0]
                 chrom = chrom.replace('chr','')
                 key = "{}_{}".format(chrom, c[1]) # chr_pos
-                data[key]['coverage'] = cov
-                data[key]['methylation'] = methp
+                alldata[key]['coverage'] = cov
+                alldata[key]['methylation'] = methp
+                if cov >= min_cov:
+                    data[key]['coverage'] = cov
+                    data[key]['methylation'] = methp
 
     except IOError as e:
         logging.error("Error loading coverage file: {}".format(fn))
         raise IOError(e)
 
-    return data
+    return alldata, data
 
 
 
@@ -137,13 +147,7 @@ def make_dendrogram(data, min_cov=10, sample_names=False, output_fn=False, plot_
 
     # Output filename
     if output_fn is False:
-        output_fn = "sample_dendrogram"
-
-    # Remove any positions with less than the threshold observations
-    for f in data.keys():
-        for p in data[f].keys():
-            if data[f][p]['coverage'] < min_cov:
-                del(data[f][p])
+        output_fn = "methylation_dendrogram"
 
     # Find shared keys present in all datasets
     shared_keys = list(set.intersection(* map(set, data.values())))
@@ -157,7 +161,7 @@ def make_dendrogram(data, min_cov=10, sample_names=False, output_fn=False, plot_
     skipped_keys = num_total - num_shared
     percent_shared = (float(num_shared)/float(num_total))*100
     percent_skipped = (float(skipped_keys)/float(num_total))*100
-    logging.info("Found {:.2e} ({:.0f}%) cytosines present in all datasets for dendrogram. Skipped {:.2e} ({:.0f}%) out of {:.2e} total observed above coverage threshold of {}.".format(num_shared, percent_shared, skipped_keys, percent_skipped, num_total, min_cov))
+    logging.info("Found {:.2e} ({:.0f}%) cytosines present in all datasets for dendrogram. Skipped {:.2e} ({:.0f}%) out of {:.2e} total observed (above coverage threshold of {}).".format(num_shared, percent_shared, skipped_keys, percent_skipped, num_total, min_cov))
 
     # Build data array
     df = []
@@ -191,7 +195,7 @@ def make_dendrogram(data, min_cov=10, sample_names=False, output_fn=False, plot_
         label.set_rotation(90)
 
     # Add a label about number of Cs used
-    plt.figtext(0.99, 0.03, r'Calculated using {:.2e} cytosines found in all samples ({:.0f}% of all seen with coverage > {})'.format(num_shared, percent_shared, min_cov),
+    plt.figtext(0.99, 0.03, r'Calculated using {:.2e} cytosines found in all samples ({:.0f}% of all seen with coverage > {}X)'.format(num_shared, percent_shared, min_cov),
                 horizontalalignment='right', fontsize=6, transform=axes.transAxes)
 
     # Save Plots
@@ -199,13 +203,84 @@ def make_dendrogram(data, min_cov=10, sample_names=False, output_fn=False, plot_
     pdf_fn = "{}.pdf".format(output_fn)
     plt.savefig(png_fn)
     plt.savefig(pdf_fn)
+    plt.close()
 
     # Return the filenames
     return {'png': png_fn, 'pdf': pdf_fn}
 
 
+def plot_meth_histograms (data, sample_names, min_cov=10, output_fn=None):
+    """
+    Plots a histogram of methylation scores. Overlays all samples
+    provided in a list
+    """
 
-def plot_meth_scatter (sample_1, sample_2, x_lab, y_lab, min_cov=10, plot=True, output_fn=None):
+    # Set up plot
+    fig = plt.figure(figsize=(10,6))
+    ax = plt.subplot(111)
+
+    if len(data) == 1:
+        onesample = True
+    else:
+        onesample = False
+
+    # Go through datasets
+    for fn, d in data.iteritems():
+
+        # Get methylation scores
+        meth = defaultdict(int)
+        for p in d.values():
+            m = "{:.0f}".format(float(p['methylation']))
+            meth[m] += 1
+
+        # Build plot list
+        y_vals = []
+        for m in range(0, 100):
+            y_vals.append(meth[str(m)])
+
+        # Plot
+        if onesample is True:
+            ax.bar(range(0, 100), y_vals, 1, color='#CCCCCC', linewidth=0.5)
+            plt.title("Methylation Histogram: {} (Coverage > {}X)".format(sample_names[fn], min_cov))
+        else:
+            ax.plot(y_vals, linewidth=1)
+
+    # Legend
+    if onesample is False:
+        # Give 10% room on the right hand side of the plot for the legend
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width * 0.9, box.height])
+        # Put a legend to the right of the current axis
+        ax.legend(sample_names.values(), loc='upper left', bbox_to_anchor=(1, 1), fontsize=8)
+
+    # Tidy plot
+    plt.tick_params(which='both', labelsize=8, direction='out', top=False, right=False)
+    plt.xlabel('% Methylation')
+    plt.ylabel('Number of CGs')
+    if onesample is False:
+        plt.title("Methylation Histogram (Coverage > {}X)".format(min_cov))
+
+    # Save plot
+    try:
+        if output_fn is None:
+            output_fn = "methylation_histogram"
+        if onesample is False:
+            plt.savefig("{}.png".format(output_fn))
+            plt.savefig("{}.pdf".format(output_fn))
+        else:
+            if not os.path.exists("histograms/png"):
+                os.makedirs("histograms/png")
+            if not os.path.exists("histograms/pdf"):
+                os.makedirs("histograms/pdf")
+            plt.savefig("histograms/png/{}.png".format(output_fn))
+            plt.savefig("histograms/pdf/{}.pdf".format(output_fn))
+        plt.close()
+    except IndexError:
+        print(output_fn)
+
+
+
+def plot_meth_scatter (sample_1, sample_2, x_lab, y_lab, min_cov=10, no_plot_scatters=False, output_fn=None):
     """
     Plots scatter plot of methylation score counts. Calculates r-squared
     correlation and spearman's correlation coefficient scores
@@ -213,14 +288,6 @@ def plot_meth_scatter (sample_1, sample_2, x_lab, y_lab, min_cov=10, plot=True, 
     Returns a dict containing filenames of PNG and PDF graphs as a dict for
     each sample.
     """
-
-    # Remove any positions with less than the threshold observations
-    for p in sample_1:
-        if sample_1[p]['coverage'] < min_cov:
-            del(sample_1[p])
-    for p in sample_2:
-        if sample_2[p]['coverage'] < min_cov:
-            del(sample_2[p])
 
     # Set up variables
     x_vals = []
@@ -273,8 +340,8 @@ def plot_meth_scatter (sample_1, sample_2, x_lab, y_lab, min_cov=10, plot=True, 
     # Caculate the spearman's rank correlation coefficient
     rho, pvalue = stats.spearmanr(all_x_vals, all_y_vals)
 
-    # Plot the histogram
-    if plot:
+    # Plot the scatter plot
+    if no_plot_scatters is not True:
         fig = plt.figure(figsize=(8,7))
         axes = fig.add_subplot(111, aspect=1.0)
         plt.hist2d(x_vals, y_vals, bins=200, norm=mpl.colors.LogNorm(), cmap=cm.Blues)
@@ -309,12 +376,17 @@ def plot_meth_scatter (sample_1, sample_2, x_lab, y_lab, min_cov=10, plot=True, 
                     horizontalalignment='left', fontsize=8, transform=axes.transAxes)
 
         # SAVE OUTPUT
+        if not os.path.exists("scatter_plots/png"):
+            os.makedirs("scatter_plots/png")
+        if not os.path.exists("scatter_plots/pdf"):
+            os.makedirs("scatter_plots/pdf")
         if output_fn is None:
             output_fn = "{}_{}_methylation_scatter".format(y_lab, x_lab)
-        png_fn = "{}.png".format(output_fn)
-        pdf_fn = "{}.pdf".format(output_fn)
+        png_fn = "scatter_plots/png/{}.png".format(output_fn)
+        pdf_fn = "scatter_plots/pdf/{}.pdf".format(output_fn)
         plt.savefig(png_fn)
         plt.savefig(pdf_fn)
+        plt.close()
 
     # Not plotting
     else:
@@ -376,6 +448,8 @@ def load_fasta_cpg(fasta_fn, cap_regions=None):
             logging.info("  ..searching chromosome {} for CpGs - found {} so far".format(chrom, len(fasta_ref)))
         else:
             logging.info("  ..searching chromosome {} for CpGs - found {} so far, {} captured".format(chrom, len(fasta_ref), len(captured_cgs)))
+
+        # Look for +ve strand CpGs
         pos = sequence.find("CG")
         while pos >= 0:
             fasta_ref.append('{}_{}'.format(chrom, pos))
@@ -393,18 +467,48 @@ def load_fasta_cpg(fasta_fn, cap_regions=None):
                     if pos >= start and pos <= end:
                         captured_cgs.append('{}_{}'.format(chrom, pos))
 
+        # Look for -ve strand CpGs
+        pos = sequence.find("GC")
+        while pos >= 0:
+            fasta_ref.append('{}_{}'.format(chrom, pos+1))
+            pos = sequence.find("GC", pos + 1)
+            if cap_regions is not None:
+                if chrom in cap_starts:
+                    # Find closest capture region to this CG position
+                    start = min(cap_starts[chrom], key=lambda x:abs(x-pos))
+                    if start > pos:
+                        sindex = cap_starts[chrom].index(start)
+                        start = cap_starts[chrom][sindex - 1]
+                    end = cap_regions[chrom][start]
+
+                    # Does our position overlap this region?
+                    if pos >= start and pos <= end:
+                        captured_cgs.append('{}_{}'.format(chrom, pos))
+
     return (fasta_ref, captured_cgs)
 
 
-def coverage_decay_plot(data, sample_names=None, total_cg_count=False, captured_cgs=None, output_fn=None):
+def coverage_decay_plot(data, sample_names=None, total_cg_count=False, captured_cgs=None):
     """
     Plots a coverage decay plot, y axis as percentage of genome-wide CpGs
     and y axis increasing coverage thresholds
     """
+    # Set up variables for global plots
+    g_vals = []
+    if captured_cgs is not None:
+        g_cap_vals = []
+
     # Collect counts of each coverage
+    x_max = 200
     for fn, d in data.iteritems():
 
-        logging.info("Saving coverage display plot for {}".format(fn))
+        # Labels
+        try:
+            sample_name = sample_names[fn]
+        except KeyError:
+            sample_name = fn
+
+        logging.info("Creating coverage display plot for input: {}".format(sample_name))
 
         # Count the occurance of both types of coverage
         coverages = defaultdict(int)
@@ -423,8 +527,7 @@ def coverage_decay_plot(data, sample_names=None, total_cg_count=False, captured_
             c_percent = (float(count) / float(total_cg_count))*100
             x_vals.append(c)
             y_vals.append(c_percent)
-        x_vals.append(0)
-        y_vals.append(100)
+        g_vals.append([x_vals, y_vals])
 
         # Build the captured coverage plotting lists
         if captured_cgs is not None:
@@ -437,35 +540,75 @@ def coverage_decay_plot(data, sample_names=None, total_cg_count=False, captured_
                 c_percent = (float(count) / float(total_captured_cgs))*100
                 cap_x_vals.append(c)
                 cap_y_vals.append(c_percent)
-            cap_x_vals.append(0)
-            cap_y_vals.append(100)
+            g_cap_vals.append([cap_x_vals, cap_y_vals])
 
         # Draw the plot
         fig = plt.figure(figsize=(10,6))
-        plt.plot(x_vals, y_vals, 'b-')
-        if captured_cgs is not None:
+        # Bar plot if only one dataset
+        if captured_cgs is None:
+            ax = plt.subplot(111)
+            ax.bar(x_vals, y_vals, 1)
+        # Lines if plotting two things
+        else:
+            plt.plot(x_vals, y_vals, 'b-')
             plt.plot(cap_x_vals, cap_y_vals, 'g--')
 
         # Tidy axes
-        plt.xlim(0,50)
+        plt.xlim(0,x_max)
         plt.tick_params(which='both', labelsize=8, direction='out', top=False, right=False)
-
-        # Labels
-        try:
-            sample_name = sample_names[fn]
-        except KeyError:
-            sample_name = fn
 
         plt.xlabel('CpG Coverage')
         plt.ylabel('Percentage of CGs')
         plt.title("Coverage Decay Plot: {}".format(sample_name))
 
-        # Save the plot
-        if output_fn is None:
-            output_fn = "{}_coverage_decay".format(sample_name)
+        # Save the individual plot
+        if not os.path.exists("coverage/png"):
+            os.makedirs("coverage/png")
+        if not os.path.exists("coverage/pdf"):
+            os.makedirs("coverage/pdf")
+        output_fn = "{}_coverage_decay".format(sample_name)
+        plt.savefig('coverage/png/{}.png'.format(output_fn))
+        plt.savefig('coverage/pdf/{}.pdf'.format(output_fn))
+        plt.close()
+
+    # Draw the global plot
+    fig = plt.figure(figsize=(10,6))
+    for vals in g_vals:
+        plt.plot(vals[0], vals[1])
+
+    # Tidy axes
+    plt.xlim(0,x_max)
+    plt.tick_params(which='both', labelsize=8, direction='out', top=False, right=False)
+
+    plt.xlabel('CpG Coverage')
+    plt.ylabel('Percentage of CGs')
+    plt.title("Coverage Decay Plot")
+
+    # Save the individual plot
+    output_fn = "all_coverage_decay"
+    plt.savefig('{}.png'.format(output_fn))
+    plt.savefig('{}.pdf'.format(output_fn))
+    plt.close()
+
+    # Draw the global captured plot
+    if captured_cgs is not None:
+        fig = plt.figure(figsize=(10,6))
+        for vals in g_cap_vals:
+            plt.plot(vals[0], vals[1])
+
+        # Tidy axes
+        plt.xlim(0,x_max)
+        plt.tick_params(which='both', labelsize=8, direction='out', top=False, right=False)
+
+        plt.xlabel('CpG Coverage')
+        plt.ylabel('Percentage of CGs')
+        plt.title("Coverage Decay Plot - Captured Regions")
+
+        # Save the individual plot
+        output_fn = "capture_coverage_decay"
         plt.savefig('{}.png'.format(output_fn))
         plt.savefig('{}.pdf'.format(output_fn))
-
+        plt.close()
 
 
 if __name__ == "__main__":
@@ -477,8 +620,8 @@ if __name__ == "__main__":
                         help="Genome Fasta reference for coverage analysis")
     parser.add_argument("-c", "--capture", dest="regions_fn",
                         help="BED file containing capture regions")
-    parser.add_argument("-s", "--scatter", dest="plot_scatters", default='auto', choices=['auto', 't', 'f'],
-                        help="Plot pairwise scatter plots? Auto = only if 10 or less plots")
+    parser.add_argument("-s", "--no-scatter", dest="no_plot_scatters", action='store_true',
+                        help="Don't plot pairwise scatter plots.")
     parser.add_argument("-l", "--log", dest="log_level", default='info', choices=['debug', 'info', 'warning'],
                         help="Level of log messages to display")
     parser.add_argument("-u", "--log-output", dest="log_output", default='stdout',
@@ -486,11 +629,6 @@ if __name__ == "__main__":
     parser.add_argument("input_cov_list", metavar='<cov file>', nargs="+",
                         help="List of input genome-wide coverage filenames")
     kwargs = vars(parser.parse_args())
-
-    # Scatter var munging
-    if kwargs['plot_scatters'] == 'auto': kwargs['plot_scatters'] = None
-    if kwargs['plot_scatters'] == 't': kwargs['plot_scatters'] = True
-    if kwargs['plot_scatters'] == 'f': kwargs['plot_scatters'] = False
 
     # Initialise logger
     numeric_log_level = getattr(logging, kwargs['log_level'].upper(), None)

@@ -18,6 +18,11 @@ It also generates a number of plots:
 * Scatter plot of first two principal components
 * Dendrogram of hierarchical clustering between samples
 
+## Example Output
+
+#### Clustering Dendrogram
+![Clustering Dendrogram](../../examples/bismark_dendrogram.png)
+
 ## Usage
 
 On the command line:
