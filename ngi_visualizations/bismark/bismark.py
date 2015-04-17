@@ -68,15 +68,15 @@ def bismark_analysis(input_cov_list, min_cov=10, fasta_fn=None, regions_fn=False
         plot_meth_histograms({fn: data[fn]}, {fn: sample_names[fn]}, output_fn="{}_histogram".format(sample_names[fn]))
 
     # Plot scatter plots and work out correlation scores
-    rsquared = defaultdict(lambda: defaultdict(float))
-    rho = defaultdict(lambda: defaultdict(float))
-    for i in range(0, len(input_cov_list)-1):
-        for j in range(i+1, len(input_cov_list)):
-            x = input_cov_list[j]
-            y = input_cov_list[i]
-            results = plot_meth_scatter(data[x], data[y], sample_names[x], sample_names[y], min_cov, no_plot_scatters)
-            rsquared[sample_names[x]][sample_names[y]] = results['r_squared']
-            rho[sample_names[x]][sample_names[y]] = results['rho']
+    if no_plot_scatters is not True:
+        for i in range(0, len(input_cov_list)-1):
+            for j in range(i+1, len(input_cov_list)):
+                x = input_cov_list[j]
+                y = input_cov_list[i]
+                filenames = plot_meth_scatter(data[x], data[y], sample_names[x], sample_names[y], min_cov, no_plot_scatters)
+
+    # TODO: Heatmap of sample correlation scores
+    # TODO: Scatter plot of first two principal components
 
     # Do coverage analysis
     if fasta_fn is not None:
@@ -341,60 +341,55 @@ def plot_meth_scatter (sample_1, sample_2, x_lab, y_lab, min_cov=10, no_plot_sca
     rho, pvalue = stats.spearmanr(all_x_vals, all_y_vals)
 
     # Plot the scatter plot
-    if no_plot_scatters is not True:
-        fig = plt.figure(figsize=(8,7))
-        axes = fig.add_subplot(111, aspect=1.0)
-        plt.hist2d(x_vals, y_vals, bins=200, norm=mpl.colors.LogNorm(), cmap=cm.Blues)
-        cbar = plt.colorbar()
 
-        # Axis labels and titles
-        plt.xlabel(x_lab)
-        plt.ylabel(y_lab)
-        plt.title("CpG Methylation Percentages (Coverage >= {})".format(min_cov))
-        cbar.set_label('Cytosine Counts')
+    fig = plt.figure(figsize=(8,7))
+    axes = fig.add_subplot(111, aspect=1.0)
+    plt.hist2d(x_vals, y_vals, bins=200, norm=mpl.colors.LogNorm(), cmap=cm.Blues)
+    cbar = plt.colorbar()
 
-        # Axes scales
-        axes.set(xlim=[0,100])
-        axes.set(ylim=[0,100])
+    # Axis labels and titles
+    plt.xlabel(x_lab)
+    plt.ylabel(y_lab)
+    plt.title("CpG Methylation Percentages (Coverage >= {})".format(min_cov))
+    cbar.set_label('Cytosine Counts')
 
-        # Tidy axes
-        axes.set_axisbelow(True)
-        axes.tick_params(which='both', labelsize=8, direction='out', top=False, right=False)
-        cbar.ax.tick_params(axis='y', direction='out')
+    # Axes scales
+    axes.set(xlim=[0,100])
+    axes.set(ylim=[0,100])
 
-        # Add a label about r squared and spearman's
-        plt.subplots_adjust(bottom=0.17)
-        plt.text(1, -0.14, r'$r^2$ = {:.2f}'.format(r_squared),
-                    horizontalalignment='right', fontsize=8, transform=axes.transAxes)
-        plt.text(1, -0.17, r'$\rho$ = {:.2f}'.format(rho),
-                    horizontalalignment='right', fontsize=8, transform=axes.transAxes)
+    # Tidy axes
+    axes.set_axisbelow(True)
+    axes.tick_params(which='both', labelsize=8, direction='out', top=False, right=False)
+    cbar.ax.tick_params(axis='y', direction='out')
 
-        # Add a label about 0% and 100%
-        plt.text(0, -0.14, r'Both 100% Methylated = {:.2e}'.format(zero_percent),
-                    horizontalalignment='left', fontsize=8, transform=axes.transAxes)
-        plt.text(0, -0.17, r'Both 0% Methylated = {:.2e}'.format(hundred_percent),
-                    horizontalalignment='left', fontsize=8, transform=axes.transAxes)
+    # Add a label about r squared and spearman's
+    plt.subplots_adjust(bottom=0.17)
+    plt.text(1, -0.14, r'$r^2$ = {:.2f}'.format(r_squared),
+                horizontalalignment='right', fontsize=8, transform=axes.transAxes)
+    plt.text(1, -0.17, r'$\rho$ = {:.2f}'.format(rho),
+                horizontalalignment='right', fontsize=8, transform=axes.transAxes)
 
-        # SAVE OUTPUT
-        if not os.path.exists("scatter_plots/png"):
-            os.makedirs("scatter_plots/png")
-        if not os.path.exists("scatter_plots/pdf"):
-            os.makedirs("scatter_plots/pdf")
-        if output_fn is None:
-            output_fn = "{}_{}_methylation_scatter".format(y_lab, x_lab)
-        png_fn = "scatter_plots/png/{}.png".format(output_fn)
-        pdf_fn = "scatter_plots/pdf/{}.pdf".format(output_fn)
-        plt.savefig(png_fn)
-        plt.savefig(pdf_fn)
-        plt.close()
+    # Add a label about 0% and 100%
+    plt.text(0, -0.14, r'Both 100% Methylated = {:.2e}'.format(zero_percent),
+                horizontalalignment='left', fontsize=8, transform=axes.transAxes)
+    plt.text(0, -0.17, r'Both 0% Methylated = {:.2e}'.format(hundred_percent),
+                horizontalalignment='left', fontsize=8, transform=axes.transAxes)
 
-    # Not plotting
-    else:
-        png_fn = None
-        pdf_fn = None
+    # SAVE OUTPUT
+    if not os.path.exists("scatter_plots/png"):
+        os.makedirs("scatter_plots/png")
+    if not os.path.exists("scatter_plots/pdf"):
+        os.makedirs("scatter_plots/pdf")
+    if output_fn is None:
+        output_fn = "{}_{}_methylation_scatter".format(y_lab, x_lab)
+    png_fn = "scatter_plots/png/{}.png".format(output_fn)
+    pdf_fn = "scatter_plots/pdf/{}.pdf".format(output_fn)
+    plt.savefig(png_fn)
+    plt.savefig(pdf_fn)
+    plt.close()
 
     # Return the filenames and correlation scores
-    return {'png': png_fn, 'pdf': pdf_fn, 'r_squared': r_squared, 'rho': rho, 'rho_pvalue': pvalue }
+    return {'png': png_fn, 'pdf': pdf_fn}
 
 
 
@@ -514,9 +509,10 @@ def coverage_decay_plot(data, sample_names=None, total_cg_count=False, captured_
         coverages = defaultdict(int)
         captured_coverages = defaultdict(int)
         for pos, arr in d.iteritems():
-            coverages[arr['coverage']] += 1
-            if captured_cgs is not None and pos in captured_cgs:
-                captured_coverages[arr['coverage']] += 1
+            if arr['coverage'] <= x_max:
+                coverages[arr['coverage']] += 1
+                if captured_cgs is not None and pos in captured_cgs:
+                    captured_coverages[arr['coverage']] += 1
 
         # Build the genome wide coverage plotting lists
         x_vals = []
@@ -618,7 +614,7 @@ if __name__ == "__main__":
                         help="Minimum coverage to use for scatter plots and dendrogram")
     parser.add_argument("-f", "--fasta", dest="fasta_fn",
                         help="Genome Fasta reference for coverage analysis")
-    parser.add_argument("-c", "--capture", dest="regions_fn",
+    parser.add_argument("-r", "--regions", dest="regions_fn",
                         help="BED file containing capture regions")
     parser.add_argument("-s", "--no-scatter", dest="no_plot_scatters", action='store_true',
                         help="Don't plot pairwise scatter plots.")
