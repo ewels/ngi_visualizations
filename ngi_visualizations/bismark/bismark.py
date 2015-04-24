@@ -127,9 +127,15 @@ def load_bismark_cov(fn, min_cov=10):
                 key = "{}_{}".format(chrom, c[1]) # chr_pos
                 alldata[key]['coverage'] = cov
                 alldata[key]['methylation'] = methp
+                alldata[key]['chr'] = chrom
+                alldata[key]['mb'] = int(float(c[1])/1000000)
+                alldata[key]['pos'] = c[1]
                 if cov >= min_cov:
                     data[key]['coverage'] = cov
                     data[key]['methylation'] = methp
+                    data[key]['chr'] = chrom
+                    data[key]['mb'] = int(float(c[1])/1000000)
+                    data[key]['pos'] = c[1]
 
     except IOError as e:
         logging.error("Error loading coverage file: {}".format(fn))
@@ -428,8 +434,9 @@ def load_fasta_cpg(fasta_fn, cap_regions=None):
     fasta_ref = list()
 
     cap_starts = defaultdict(str)
+    captured_cgs_count = 0
     if cap_regions is not None:
-        captured_cgs = list()
+        captured_cgs = defaultdict(lambda:defaultdict(int))
         for chrom in cap_regions:
             cap_starts[chrom] = cap_regions[chrom].keys()
     else:
@@ -442,7 +449,7 @@ def load_fasta_cpg(fasta_fn, cap_regions=None):
         if cap_regions is None:
             logging.info("  ..searching chromosome {} for CpGs - found {} so far".format(chrom, len(fasta_ref)))
         else:
-            logging.info("  ..searching chromosome {} for CpGs - found {} so far, {} captured".format(chrom, len(fasta_ref), len(captured_cgs)))
+            logging.info("  ..searching chromosome {} for CpGs - found {} so far, {} captured".format(chrom, len(fasta_ref), captured_cgs_count))
 
         # Look for +ve strand CpGs
         pos = sequence.find("CG")
@@ -460,7 +467,9 @@ def load_fasta_cpg(fasta_fn, cap_regions=None):
 
                     # Does our position overlap this region?
                     if pos >= start and pos <= end:
-                        captured_cgs.append('{}_{}'.format(chrom, pos))
+                        mb = int(pos/1000000)
+                        captured_cgs[chrom][mb] = pos
+                        captured_cgs_count += 1
 
         # Look for -ve strand CpGs
         pos = sequence.find("GC")
@@ -478,11 +487,13 @@ def load_fasta_cpg(fasta_fn, cap_regions=None):
 
                     # Does our position overlap this region?
                     if pos >= start and pos <= end:
-                        captured_cgs.append('{}_{}'.format(chrom, pos))
+                        mb = int(pos/1000000)
+                        captured_cgs[chrom][mb] = pos
+                        captured_cgs_count += 1
 
     return (fasta_ref, captured_cgs)
 
-
+@profile # Test with kernprof -l -v <command>
 def coverage_decay_plot(data, sample_names=None, total_cg_count=False, captured_cgs=None):
     """
     Plots a coverage decay plot, y axis as percentage of genome-wide CpGs
@@ -511,8 +522,9 @@ def coverage_decay_plot(data, sample_names=None, total_cg_count=False, captured_
         for pos, arr in d.iteritems():
             if arr['coverage'] <= x_max:
                 coverages[arr['coverage']] += 1
-                if captured_cgs is not None and pos in captured_cgs:
-                    captured_coverages[arr['coverage']] += 1
+                if captured_cgs is not None:
+                    if pos in captured_cgs[arr['chr']][arr['mb']].items():
+                        captured_coverages[arr['coverage']] += 1
 
         # Build the genome wide coverage plotting lists
         x_vals = []
