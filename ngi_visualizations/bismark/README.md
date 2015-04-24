@@ -43,11 +43,14 @@ _Example coming soon_
 #### Coverage Analysis
 _Example coming soon_
 
+#### Principle Component Analysis
+_Example possibly coming soon. Maybe._
+
 ## Usage
 
 On the command line:
 ```bash
-python bismark.py <sample_1.gwCov.cov> .. <sample_n.gwCov.cov>
+python bismark.py *cov
 ```
 
 Within a python script:
