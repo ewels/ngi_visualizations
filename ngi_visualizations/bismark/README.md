@@ -1,4 +1,4 @@
-# Bismark ngi_visualizations toolkit
+# Bismark Visualisation Toolkit
 
 [Bismark](http://www.bioinformatics.babraham.ac.uk/projects/bismark/) is a tool
 used for aligning Bisfulfite-Sequencing libraries, giving information about
@@ -24,6 +24,24 @@ It also generates a number of plots:
 
 #### Clustering Dendrogram
 ![Clustering Dendrogram](../../examples/bismark_dendrogram.png)
+
+#### Correlation Score Heatmap
+_Example coming soon_
+
+#### Sample:Sample Scatter Plots
+![Bismark Scatter Plot](../../examples/bismark_methylation_scatter.png)
+
+#### Methylation Score Histograms
+<table>
+<tr><th>All Samples</th><th>Per-Sample</th></tr>
+<tr><td>
+<img src="../../examples/bismark_histogram_allsamples.png" title="Histogram - All Samples">
+</td><td>
+<img src="../../examples/bismark_histogram_perSample.png" title="Histogram - Per Samples">
+</td></tr></table>
+
+#### Coverage Analysis
+_Example coming soon_
 
 ## Usage
 
