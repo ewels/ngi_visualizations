@@ -436,7 +436,7 @@ def load_fasta_cpg(fasta_fn, cap_regions=None):
     cap_starts = defaultdict(str)
     captured_cgs_count = 0
     if cap_regions is not None:
-        captured_cgs = defaultdict(lambda:defaultdict(int))
+        captured_cgs = defaultdict(lambda:defaultdict(list))
         for chrom in cap_regions:
             cap_starts[chrom] = cap_regions[chrom].keys()
     else:
@@ -468,7 +468,7 @@ def load_fasta_cpg(fasta_fn, cap_regions=None):
                     # Does our position overlap this region?
                     if pos >= start and pos <= end:
                         mb = int(pos/1000000)
-                        captured_cgs[chrom][mb] = pos
+                        captured_cgs[chrom][mb].append(pos)
                         captured_cgs_count += 1
 
         # Look for -ve strand CpGs
@@ -488,7 +488,7 @@ def load_fasta_cpg(fasta_fn, cap_regions=None):
                     # Does our position overlap this region?
                     if pos >= start and pos <= end:
                         mb = int(pos/1000000)
-                        captured_cgs[chrom][mb] = pos
+                        captured_cgs[chrom][mb].append(pos)
                         captured_cgs_count += 1
 
     return (fasta_ref, captured_cgs)
@@ -523,7 +523,7 @@ def coverage_decay_plot(data, sample_names=None, total_cg_count=False, captured_
             if arr['coverage'] <= x_max:
                 coverages[arr['coverage']] += 1
                 if captured_cgs is not None:
-                    if pos in captured_cgs[arr['chr']][arr['mb']].items():
+                    if pos in captured_cgs[arr['chr']][arr['mb']]:
                         captured_coverages[arr['coverage']] += 1
 
         # Build the genome wide coverage plotting lists
