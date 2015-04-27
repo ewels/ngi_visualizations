@@ -75,7 +75,10 @@ def bismark_analysis(input_cov_list, min_cov=10, fasta_fn=None, regions_fn=False
                 y = input_cov_list[i]
                 filenames = plot_meth_scatter(data[x], data[y], sample_names[x], sample_names[y], min_cov, no_plot_scatters)
 
-    # TODO: Heatmap of sample correlation scores
+    # Heatmap and text matrix of correlation scores
+    logging.info("Making heatmap of correlation scores")
+    meth_correlations(data, sample_names)
+
     # TODO: Scatter plot of first two principal components
 
     # Do coverage analysis
@@ -334,7 +337,7 @@ def plot_meth_scatter (sample_1, sample_2, x_lab, y_lab, min_cov=10, no_plot_sca
         missing_p = (missing_positions/float(len(sample_1)))*100
         logging.warn("Warning: {} positions out of {} mentioned in {} not found in {} ({:.2f}%)".format(missing_positions, len(sample_1), x_lab, y_lab, missing_p))
     if none_positions > 0:
-        logging.warn("Warning: {} positions skipped due to zero coverage in at least one sample for {} and {}".format(none_positions, x_lab, y_lab))
+        logging.warn("Warning: {} positions skipped in at least one sample for {} and {}".format(none_positions, x_lab, y_lab))
     if len(x_vals) == 0 or len(x_vals) != len(y_vals):
         logging.warn("Error: Bad lengths of lists for plotting(x = {}, y = {}) for {} and {}. Skipping.".format(len(x_vals), len(y_vals), x_lab, y_lab))
         return None
@@ -347,7 +350,6 @@ def plot_meth_scatter (sample_1, sample_2, x_lab, y_lab, min_cov=10, no_plot_sca
     rho, pvalue = stats.spearmanr(all_x_vals, all_y_vals)
 
     # Plot the scatter plot
-
     fig = plt.figure(figsize=(8,7))
     axes = fig.add_subplot(111, aspect=1.0)
     plt.hist2d(x_vals, y_vals, bins=200, norm=mpl.colors.LogNorm(), cmap=cm.Blues)
@@ -396,6 +398,104 @@ def plot_meth_scatter (sample_1, sample_2, x_lab, y_lab, min_cov=10, no_plot_sca
 
     # Return the filenames and correlation scores
     return {'png': png_fn, 'pdf': pdf_fn}
+
+
+def meth_correlations(data, sample_names, min_cov=10, output_fn=None):
+    """
+    Calculates the correlation between each sample pair. Outputs
+    this matrix as a text file and plots a heatmap
+    """
+
+    if output_fn is None:
+        output_fn = 'methylation_correlation'
+
+    r_squared_m = []
+    spearmans_m = []
+
+    # Loop through each sample pair
+    sample_keys = data.keys()
+    for i in range(0, len(sample_keys)-1):
+
+        # Get mirror image of old keys
+        r_squared_row = []
+        spearmans_row = []
+        if i > 0:
+            logging.info("Counter i is {}".format(i))
+            for j in range(0, i-1):
+                logging.info("Counter j is {}".format(j))
+                for k in range(i-1, 0):
+                    logging.info("Counter k is {}".format(k))
+                    r_squared_row.append(r_squared_m[j][k])
+                    spearmans_row.append(r_squared_m[j][k])
+        r_squared_row.append(1)
+        spearmans_row.append(1)
+
+        # Calculate correlation between this sample pair
+        for j in range(i+1, len(sample_keys)):
+            x = data[sample_keys[j]]
+            y = data[sample_keys[i]]
+            x_vals = []
+            y_vals = []
+            shared_keys = x.viewkeys() & y.viewkeys()
+
+            for pos in shared_keys:
+                thisy = float(y[pos]['methylation'])
+                thisx = float(x[pos]['methylation'])
+                y_vals.append(thisy)
+                x_vals.append(thisx)
+
+            if len(x_vals) == 0 or len(x_vals) != len(y_vals):
+                logging.warn("Error: Bad lengths of lists for plotting(x = {}, y = {}) for {} and {}. Skipping.".format(len(x_vals), len(y_vals), j, i))
+                continue
+
+            # Calculate the r squared
+            corr = np.corrcoef(x_vals, y_vals)[0,1]
+            r_squared = corr ** 2
+            r_squared_row.append(r_squared)
+
+            # Caculate the spearman's rank correlation coefficient
+            rho, pvalue = stats.spearmanr(x_vals, y_vals)
+            spearmans_row.append(rho)
+
+        # Append this row to the matrices
+        r_squared_m.append(r_squared_row)
+        spearmans_m.append(spearmans_row)
+
+
+
+    # Testing - print to console
+    logging.info("R Squared output:\n{}\n\nSpearmans output:\n{}\n\n\n".format(r_squared_m, spearmans_m))
+
+    # Save the text matrices to files
+    with open('{}_rsquared.txt'.format(output_fn),'w') as fh:
+        print("\t{}\n".format(sample_names.values().join("\t")), file=fh)
+        for i, val in enumerate(r_squared_m):
+            print("{}\t{}\n".format(sample_names[i], val.join("\t")), file=fh)
+
+    with open('{}_spearmans.txt'.format(output_fn),'w') as fh:
+        print("\t{}\n".format(sample_names.values().join("\t")), file=fh)
+        for i, val in enumerate(spearmans_m):
+            print("{}\t{}\n".format(sample_names[i], val.join("\t")), file=fh)
+
+    # Plot the r_squared heatmap
+    fig, ax = plt.subplots()
+    heatmap = ax.pcolor(r_squared_m, cmap=plt.cm.Blues)
+
+    png_fn = "{}_rsquared.png".format(output_fn)
+    pdf_fn = "{}_rsquared.pdf".format(output_fn)
+    plt.savefig(png_fn)
+    plt.savefig(pdf_fn)
+    plt.close()
+
+    # Plot the spearmans heatmap
+    fig, ax = plt.subplots()
+    heatmap = ax.pcolor(spearmans_m, cmap=plt.cm.Blues)
+
+    png_fn = "{}_spearmans.png".format(output_fn)
+    pdf_fn = "{}_spearmans.pdf".format(output_fn)
+    plt.savefig(png_fn)
+    plt.savefig(pdf_fn)
+    plt.close()
 
 
 
@@ -493,7 +593,7 @@ def load_fasta_cpg(fasta_fn, cap_regions=None):
 
     return (fasta_ref, captured_cgs)
 
-@profile # Test with kernprof -l -v <command>
+# @profile # Test with kernprof -l -v <command>
 def coverage_decay_plot(data, sample_names=None, total_cg_count=False, captured_cgs=None):
     """
     Plots a coverage decay plot, y axis as percentage of genome-wide CpGs
