@@ -211,7 +211,6 @@ my $html_report = <<'HTMLTEMPLATESTRING';
 		}
 		.container {
 			margin:0 auto;
-			max-width:1200px;
 		}
 		.header h1,
 		.header img {
