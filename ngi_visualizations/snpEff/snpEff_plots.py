@@ -18,10 +18,10 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-def plot_snpEff (summary_fn, output_fn='effect', logx=False):
+def plot_snpEff (summary_fn, output_fn='effect', logx_type=True, logx_regions=False):
     """
     Main function. Takes summary input file and makes some plots.
-    """    
+    """
     # Load in the data
     fn = os.path.realpath(summary_fn)
     types = {}
@@ -61,18 +61,18 @@ def plot_snpEff (summary_fn, output_fn='effect', logx=False):
     except IOError as e:
         logging.error("Could not load input file: {}".format(fn))
         raise IOError(e)
-    
+
     # Plot the "Types" graph
     if len(type_counts) == 0:
         logging.warning("Unable to find any effect type counts in input file")
     else:
-        plot_snpEff_graph(types, type_counts, type_percents, output_fn+'_types', 'SNP Effects by Type', logx)
-    
+        plot_snpEff_graph(types, type_counts, type_percents, output_fn+'_types', 'SNP Effects by Type', logx_type)
+
     # Plot the "Regions" graph
     if len(region_counts) == 0:
         logging.warning("Unable to find any region counts in input file")
     else:
-        plot_snpEff_graph(regions, region_counts, region_percents, output_fn+'_regions', 'SNP Effects by Region', logx) 
+        plot_snpEff_graph(regions, region_counts, region_percents, output_fn+'_regions', 'SNP Effects by Region', logx_regions)
 
 def plot_snpEff_graph(types, counts, percents, output_fn, title, logx):
     # Prepare the sorted values
@@ -83,12 +83,12 @@ def plot_snpEff_graph(types, counts, percents, output_fn, title, logx):
         plt_labels.append(types[effect])
         plt_counts.append(counts[effect])
         percent_factor = percents[effect] / counts[effect]
-    
+
     # Set up the plot
     fig = plt.figure(figsize=(8,5), tight_layout={'rect':(0,0.04,1,0.95)})
     axes = fig.add_subplot(111)
     [i.set_linewidth(0.5) for i in axes.spines.itervalues()] # thinner border
-    
+
     # Plot
     min_x = 0
     if logx:
@@ -100,14 +100,14 @@ def plot_snpEff_graph(types, counts, percents, output_fn, title, logx):
     axes.set_yticks(ypos+0.3)
     axes.set_yticklabels(plt_labels)
     axes.tick_params(left=False, right=False)
-    
+
     # X axis
     if logx:
         axes.set_xscale('log')
     axes.tick_params(which='both', labelsize=8, direction='out', top=False, right=False)
     axes.grid(True, zorder=0, which='both', axis='x', linestyle='-', color='#EDEDED', linewidth=1)
     axes.set_axisbelow(True)
-    
+
     # Make the secondary percentage axis
     ax2 = axes.twiny()
     ax2.tick_params(which='both', labelsize=8, direction='out', bottom=False, right=False)
@@ -118,14 +118,14 @@ def plot_snpEff_graph(types, counts, percents, output_fn, title, logx):
     # I have no idea why I have to get rid of these two elements....
     ax1_ticks = ax1_ticks[1:-1]
     ax2.set_xticks(ax1_ticks)
-    
+
     # Set the secondary axis percentage labels
     def percent_total(counts):
         y = [x*percent_factor for x in counts]
         return ["%.2f%%" % z for z in y]
     ax2_labels = percent_total(ax2.get_xticks())
     ax2.set_xticklabels(ax2_labels)
-    
+
     # Labels
     plt.text(0.5, 1.1, title, horizontalalignment='center',
                     fontsize=16, transform=axes.transAxes)
@@ -139,7 +139,7 @@ def plot_snpEff_graph(types, counts, percents, output_fn, title, logx):
     logging.info("Saving to {} and {}".format(png_fn, pdf_fn))
     plt.savefig(png_fn)
     plt.savefig(pdf_fn)
-    
+
     # Close the plot
     plt.close(fig)
 
@@ -151,8 +151,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser("snpEff_plots.py", description="Plot snpEFF graphs")
     parser.add_argument("-o", "--output", dest="output_fn", default='effect',
                         help="Plot output filename base. Default: effect (effect_types.png / effect_regions.png)")
-    parser.add_argument("-x", "--logx", dest="logx", type=bool, default=False,
-                        help="Use a log scale on the x axis?")
+    parser.add_argument("-x", "--logx_type", dest="logx_type", type=bool, default=True,
+                        help="Use a log scale on the x axis for the Type plot?")
+    parser.add_argument("-z", "--logx_regions", dest="logx_regions", type=bool, default=False,
+                        help="Use a log scale on the x axis for the Regions plot?")
     parser.add_argument("-l", "--log", dest="log_level", default='info', choices=['debug', 'info', 'warning'],
                         help="Level of log messages to display")
     parser.add_argument("-u", "--log-output", dest="log_output", default='stdout',
@@ -160,16 +162,16 @@ if __name__ == "__main__":
     parser.add_argument("summary_fn", metavar='<snpEff summary file>',
                         help="Data input - usually snpEff_summary.csv")
     kwargs = vars(parser.parse_args())
-    
+
     # Initialise logger
     numeric_log_level = getattr(logging, kwargs['log_level'].upper(), None)
     if kwargs['log_output'] != 'stdout':
-        logging.basicConfig(filename=kwargs['log_output'], format='', level=numeric_log_level) 
+        logging.basicConfig(filename=kwargs['log_output'], format='', level=numeric_log_level)
     else:
         logging.basicConfig(format='', level=numeric_log_level)
     # Remove logging parameters
     kwargs.pop('log_level', None)
     kwargs.pop('log_output', None)
-    
+
     # Call plot_observed_genes()
     plot_snpEff(**kwargs)

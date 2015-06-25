@@ -34,10 +34,11 @@ def plot_insert_size_histogram (insertsize_data, output_fn='insert_size', min_x=
             max_x = None
         else:
             max_x = False
-        
+
     # Load in the data
     fn = os.path.realpath(insertsize_data)
     counts = {}
+    zero_insertsize = 0
     try:
         with open(fn, 'r') as fh:
             next(fh) # skip the header
@@ -45,16 +46,19 @@ def plot_insert_size_histogram (insertsize_data, output_fn='insert_size', min_x=
                 (insertsize, count) = line.split(None, 1)
                 insertsize = int(round(float(insertsize)))
                 count = float(count) / 1000000
-                counts[insertsize] = count
+                if(insertsize == 0):
+                    zero_insertsize = count
+                else:
+                    counts[insertsize] = count
 
     except IOError as e:
         logging.error("Could not load input file: {}".format(fn))
         raise
-    
+
     # Find mean
     num_counts = sum(counts.values())
     mean_insert_size = sum([ins * cov for (ins, cov) in counts.iteritems()]) / num_counts
-    
+
     # Find median
     cum_counts = 0
     median_insert_size = None
@@ -63,11 +67,11 @@ def plot_insert_size_histogram (insertsize_data, output_fn='insert_size', min_x=
         if cum_counts >= num_counts/2:
             median_insert_size = thisins
             break
-    
+
     # Set max_x automatically if we want to
     if max_x == False and median_insert_size is not None:
         max_x = median_insert_size * 2
-    
+
     # Collect the x and y points that we need and ignore the ones that we don't
     x = []
     y = []
@@ -81,19 +85,19 @@ def plot_insert_size_histogram (insertsize_data, output_fn='insert_size', min_x=
                 bincounts = 0
         elif max_x is not None and thisins > max_x:
             break
-    
+
     # Check that we found something
     if len(y) == 0:
         raise EOFError ("Unable to find any data in input file")
-    
+
     # Set up the plot
     fig = plt.figure(figsize=(8,3.4), tight_layout={'rect':(0,0.04,1,1)})
     axes = fig.add_subplot(111)
     [i.set_linewidth(0.5) for i in axes.spines.itervalues()] # thinner border
-    
+
     # Plot
     axes.bar(x, y, width=bin_size, linewidth=0.5, color="#ccebc5")
-    
+
     # Plot the mean as a dashed line
     axes.axvline(mean_insert_size, color='black', linestyle='--', linewidth=1)
 
@@ -110,15 +114,15 @@ def plot_insert_size_histogram (insertsize_data, output_fn='insert_size', min_x=
     axes.grid(True, zorder=0, which='both', axis='y', linestyle='-', color='#EDEDED', linewidth=1)
     axes.set_axisbelow(True)
     # axes.set_xlim([0,60])
-    
+
     # Make the x axis labels have an X
     axes.set_xticklabels(["%d bp" % d for d in axes.get_xticks()])
-    
+
     # Labels
     matplotlib.rcParams['mathtext.default'] = 'regular'
     plt.xlabel(r"Insert Size (bp)")
     plt.ylabel(r'Number of Reads ($\times 10^6$)')
-    plt.text(0.5, -0.25, 'Mean Insert Size: {:.0f} bp'.format(mean_insert_size),
+    plt.text(0.5, -0.25, r'Mean Insert Size: {:.0f} bp. {:.1f}$\times 10^6$ reads had N/A insert size.'.format(mean_insert_size, zero_insertsize),
                 horizontalalignment='center', fontsize=8, transform = axes.transAxes)
 
     # SAVE OUTPUT
@@ -127,7 +131,7 @@ def plot_insert_size_histogram (insertsize_data, output_fn='insert_size', min_x=
     logging.info("Saving to {} and {}".format(png_fn, pdf_fn))
     plt.savefig(png_fn)
     plt.savefig(pdf_fn)
-    
+
     # Close the plot
     plt.close(fig)
 
@@ -152,16 +156,16 @@ if __name__ == "__main__":
     parser.add_argument("insertsize_data", metavar='<insert size data file>',
                         help="Data input - usually raw_data_qualimapReport/insert_size_histogram.txt")
     kwargs = vars(parser.parse_args())
-    
+
     # Initialise logger
     numeric_log_level = getattr(logging, kwargs['log_level'].upper(), None)
     if kwargs['log_output'] != 'stdout':
-        logging.basicConfig(filename=kwargs['log_output'], format='', level=numeric_log_level) 
+        logging.basicConfig(filename=kwargs['log_output'], format='', level=numeric_log_level)
     else:
         logging.basicConfig(format='', level=numeric_log_level)
     # Remove logging parameters
     kwargs.pop('log_level', None)
     kwargs.pop('log_output', None)
-    
+
     # Call plot_observed_genes()
     plot_insert_size_histogram(**kwargs)

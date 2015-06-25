@@ -40,11 +40,11 @@ python count_biotypes.py -g <annotation.gtf> <aligned_1.bam> .. <aligned_n.bam>
 Within a python script:
 
 ```python
-import count_biotypes
-count_biotypes.count_biotypes(annotation_file_path_, input_bam_file_paths):
+from ngi_visulizations import count_biotypes
+count_biotypes.count_biotypes(annotation_file_path_, input_bam_file_paths)
 ```
 
-If importing, individual functions can be called for a more 
+If importing, individual functions can be called for a more
 fine-grained approach:
 
 ```python
@@ -90,9 +90,9 @@ The script is written in Python. The following libraries are required:
 * os
 
 ## Credits
-These scripts were written for use at the 
+These scripts were written for use at the
 [National Genomics Infrastructure](https://portal.scilifelab.se/genomics/)
-at [SciLifeLab](http://www.scilifelab.se/) in Stockholm, Sweden. They are 
+at [SciLifeLab](http://www.scilifelab.se/) in Stockholm, Sweden. They are
 part of a larger repository of
 [NGI Visualization Scripts](https://github.com/SciLifeLab/ngi_visualizations).
 
@@ -100,4 +100,3 @@ For more information, please get in touch with
 [Phil Ewels](https://github.com/ewels).
 
 <p align="center"><a href="http://www.scilifelab.se/" target="_blank"><img src="../../examples/SciLifeLab_logo.png" title="SciLifeLab"></a></p>
-
