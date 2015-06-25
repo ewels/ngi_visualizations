@@ -48,31 +48,31 @@ my $config_result = GetOptions(
 	"help" => \$help
 );
 if($help){
-	print "\n\n\tUSAGE: bismark_coverage_curves.pl <coverage_file.cov>\n\n
+	print "\n\n\tUSAGE: bismark_coverage_curves.pl *.cov\n\n
 --regions <regions.bed>
 	BED file containing regions of interest
 
 --stranded
 	Split the report up into forward and reverse strands
-	
+
 --min_cov (default = 0)
 	Minimum coverage to consider
-	
+
 --max_cov (default = 15, 50 with capture regions)
 	Maximum coverage to consider
-	
+
 --binsize (default = 1)
 	Bin size to use
-	
+
 --numlines (default = 1000000)
 	Number of lines to process
-	
+
 --append (default = _coverageStats.txt)
 	String to append to the output filenames
-	
+
 --quiet
 	Do not print status messages
-	
+
 --help
 	Print this help message
 
@@ -109,6 +109,8 @@ my $started = time();
 
 # Load regions of interest into memory
 my %roi;
+my $roi_regions = 0;
+my $roi_bp = 0;
 if($regions){
 	warn "\nLoading regions of interest..\n" unless($quiet);
 	open(ROI, '<', $regions) or die "Couldn't open regions of interest file $regions: $? $!\n";
@@ -119,15 +121,22 @@ if($regions){
 		$chr =~ s/chr//;
 		$start =~ s/\D//g;
 		$end =~ s/\D//g;
-		my $mb = int($start / 1000000);
-		$roi{$chr}{$mb}{$start} = $end;
+		if(length($chr) > 0 and length($start) > 0 and length($end) > 0){
+			my $mb = int($start / 1000000);
+			$roi{$chr}{$mb}{$start} = $end;
+			$roi_regions++;
+			$roi_bp = $end - $start;
+		}
 	}
 	close ROI;
 	warn "  ..loaded\n\n" unless($quiet);
+	warn "Found $roi_regions capture regions covering $roi_bp bp..\n" unless($quiet);
 }
 
 # Go through each file
+my $orig_regions = $regions;
 foreach my $fn (@filenames){
+	$regions = $orig_regions;
 	warn "Processing $fn\n" unless($quiet);
 	open(IN, '<', $fn) or die "Couldn't open input file $fn: $? $!\n";
 	# Go through each cytosine
@@ -158,7 +167,7 @@ foreach my $fn (@filenames){
 				if($r_start < $pos and $roi{$chr}{$mb}{$r_start} > $pos){
 					$covered = 1;
 					last;
-				} 
+				}
 			}
 			if($covered){
 				$roi_coverage{$numcalls}++;
@@ -193,7 +202,19 @@ foreach my $fn (@filenames){
 		}
 	}
 	close IN;
-	
+
+	# Print some stats
+	warn "Found $num_Cs total Cyotosines. $TS_num_Cs + strand, $BS_num_Cs bottom strand.\n" unless($quiet);;
+	if($regions){
+		warn "$num_roi_Cs cyotosines were within region of interest, $num_notroi_Cs outside.\n" unless($quiet);;
+	}
+
+	# Check we had some covered reads
+	if($regions and $num_roi_Cs == 0){
+		warn "\nError! No captured Cytosines found. Ignoring --regions\n";
+		$regions = 0;
+	}
+
 	# Work out the coverage bin stuff
 	my $binstats .= "Coverage Bin\tCount";
 	if($stranded){
@@ -281,7 +302,7 @@ foreach my $fn (@filenames){
 		}
 		if($regions){
 			if($stranded){
-				$line .= "\t".join("\t", ($region_cov_counts{$bin}, $TS_region_cov_counts{$bin}, $BS_region_cov_counts{$bin}, 
+				$line .= "\t".join("\t", ($region_cov_counts{$bin}, $TS_region_cov_counts{$bin}, $BS_region_cov_counts{$bin},
 										  $region_notcov_counts{$bin}, $TS_region_notcov_counts{$bin}, $BS_region_notcov_counts{$bin}));
 			} else {
 				$line .= "\t".join("\t", ($region_cov_counts{$bin}, $region_notcov_counts{$bin}));
@@ -289,13 +310,13 @@ foreach my $fn (@filenames){
 		}
 		$binstats .= $line."\n";
 	}
-	
+
 	# Sanity check for strandedness
 	if($TS_num_Cs == 0 or $BS_num_Cs == 0){
 		warn sprintf("\nError in total number of Top Strand Cs (%d) or Bottom Strand Cs (%d).\nCould be an input format problem? Ignoring --stranded..\n", $TS_num_Cs, $BS_num_Cs);
 		$stranded = 0;
 	}
-	
+
 	# Calculate summary & plot data
 	my @plot;
 	my @cov_counts_array;
@@ -310,7 +331,7 @@ foreach my $fn (@filenames){
 	my @TS_region_notcov_counts_array;
 	my @BS_region_cov_counts_array;
 	my @BS_region_notcov_counts_array;
-	
+
 	my $cum_count = $num_Cs;
 	foreach my $bin (sort {$a <=> $b} keys(%cov_counts)){
 		my $cov_percent = ($cum_count / $num_Cs)*100;
@@ -321,7 +342,7 @@ foreach my $fn (@filenames){
 			push @cov_counts_array, $bin;
 		}
 	}
-	
+
 	if($stranded){
 		my $TS_cum_count = $TS_num_Cs;
 		my $BS_cum_count = $BS_num_Cs;
@@ -340,7 +361,7 @@ foreach my $fn (@filenames){
 				push @BS_cov_counts_array, $bin;
 			}
 		}
-	} 
+	}
 	if($regions){
 		my $cum_roi_count = $num_roi_Cs;
 		my $cum_notroi_count = $num_notroi_Cs;
@@ -393,7 +414,7 @@ foreach my $fn (@filenames){
 			}
 		}
 	}
-	
+
 	# Create summary
 	my $summary = "\nSummary of coverage from $fn\n";
 	$summary .= sprintf("\tCovered Cs: %d out of %d (%.2f%%)\n", $binned_cov_counts, $num_Cs, (($binned_cov_counts/$num_Cs)*100));
@@ -418,7 +439,7 @@ foreach my $fn (@filenames){
 			$summary .= sprintf("\tMean Regions coverage: %.2f\n\tMedian Regions coverage: %d\n", mean(\@TS_region_cov_counts_array), median(\@TS_region_cov_counts_array));
 			$summary .= sprintf("\tMean coverage outside Regions: %.2f\n\tMedian coverage outside Regions: %d\n", mean(\@TS_region_notcov_counts_array), median(\@TS_region_notcov_counts_array));
 		}
-	
+
 		$summary .= "\nSummary of coverage on Bottom Strand (-):\n";
 		$summary .= sprintf("\tCovered Cs: %d out of %d (%.2f%%)\n", $BS_binned_cov_counts, $BS_num_Cs, (($BS_binned_cov_counts/$BS_num_Cs)*100));
 		if($regions){
@@ -431,13 +452,13 @@ foreach my $fn (@filenames){
 			$summary .= sprintf("\tMean coverage outside Regions: %.2f\n\tMedian coverage outside Regions: %d\n", mean(\@BS_region_notcov_counts_array), median(\@BS_region_notcov_counts_array));
 		}
 	}
-	
-	
+
+
 	$summary .= "\n";
-	
+
 	# Print summary to STDERR if we're not being quiet
 	warn $summary unless($quiet);
-	
+
 	# Write everything to the log file
 	my $output_fn = $fn.$append;
 	open (OUT, '>', $output_fn) or die "Can't create coverage stats file $output_fn: $? $!\n";
@@ -476,19 +497,19 @@ foreach my $fn (@filenames){
 			 y_label              => '% CpGs',
 			 title                => 'Coverage Decay Plot',
 			 line_width           => 2,
-	 
+
 			 x_min_value          => 0,
 			 x_max_value          => $max_cov,
 			 x_label_skip         => 5,
 			 x_label_position     => 0.5,
 			 x_number_format      => '%d x',
-	 
+
 			 y_min_value          => 0,
 			 y_max_value          => 100,
 			 y_tick_number        => 10,
 			 y_label_skip         => 2,
 			 y_number_format      => '%d%%',
-	 
+
 			 bgclr                => 'white',
 			 transparent          => 0,
 			 legend_placement     => 'BC',
@@ -516,7 +537,7 @@ foreach my $fn (@filenames){
 	    print PLOT $gd->png;
 		close PLOT;
 	} # End of plotting
-	
+
 } # End of files loop
 
 warn "Finished analysis at ".strftime("%H:%M:%S %a %b %e %Y", localtime)."\n" unless($quiet);
