@@ -372,11 +372,11 @@ my $html_report = <<'HTMLTEMPLATESTRING';
 					var m_type = $(this).text().trim();
 					meth_plot_options.series = meth_calls_data[m_type];
 					if(m_type == 'CpG'){
-						meth_plot_options.colors = plot_colors.slice(0, 2);
+						meth_plot_options.colors = meth_plot_colors.slice(0, 2);
 					} else if(m_type == 'CHG'){
-						meth_plot_options.colors = plot_colors.slice(2, 5);
+						meth_plot_options.colors = meth_plot_colors.slice(2, 5);
 					} else if(m_type == 'CHH'){
-						meth_plot_options.colors = plot_colors.slice(4, 7);
+						meth_plot_options.colors = meth_plot_colors.slice(4, 7);
 					}
 					$('#methylation_context').highcharts(meth_plot_options);
 				}
