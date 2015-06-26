@@ -15,6 +15,7 @@ if($num_bam == 0){
 my @categories_arr;
 my @not_aligned_arr;
 my @ambig_aligned_arr;
+my @no_seq_arr;
 my @dup_alignments_arr;
 my @unique_alignments_arr;
 my @meth_cpg_string_arr;
@@ -24,12 +25,13 @@ my @unmeth_cph_string_arr;
 my @meth_chh_string_arr;
 my @unmeth_chh_string_arr;
 
-my @summary_csv_fields = [
+my @summary_csv_fields = (
     'File',
     'Total Reads',
     'Aligned Reads',
     'Unaligned Reads',
     'Ambiguously Aligned Reads',
+    'No Genomic Sequence',
     'Duplicate Reads (removed)',
     'Unique Reads (remaining)',
     'Total Cs',
@@ -39,7 +41,7 @@ my @summary_csv_fields = [
     'Unmethylated CpHs',
     'Methylated CHHs',
     'Unmethylated CHHs'
-];
+);
 my $summary_csv = join("\t",@summary_csv_fields)."\n";
 my $num_samples = scalar @bam_files;
 for my $bam (@bam_files){
@@ -50,6 +52,7 @@ for my $bam (@bam_files){
     my $aligned_reads = '';
     my $unaligned = '';
     my $ambig_reads = '';
+    my $no_seq_reads = '';
     my $dup_reads = '';
     my $unique_reads = '';
     my $total_c = '';
@@ -86,16 +89,18 @@ for my $bam (@bam_files){
         		$total_reads = $1 if (/^Sequence pairs analysed in total:\s+(\d+)$/);
                 $unaligned = $1 if (/^Sequence pairs with no alignments under any condition:\s+(\d+)$/);
                 $ambig_reads = $1 if (/^Sequence pairs did not map uniquely:\s+(\d+)$/);
+                $no_seq_reads = $1 if (/^Sequence pairs which were discarded because genomic sequence could not be extracted:\s+(\d+)$/);
     	    }
     	    else{
         		$total_reads = $1 if (/^Sequences analysed in total:\s+(\d+)$/);
                 $unaligned = $1 if (/^Sequences with no alignments under any condition:\s+(\d+)$/);
                 $ambig_reads = $1 if (/^Sequences did not map uniquely:\s+(\d+)$/);
+                $no_seq_reads = $1 if (/^Sequences which were discarded because genomic sequence could not be extracted:\s+(\d+)$/);
     	    }
     	}
     	close(BISMARK_REPORT);
     } else {
-	       warn "Warning! Couldn't open bismark report $bm_report: $!";
+        warn "Warning! Couldn't open bismark report $bm_report: $!";
     }
 
     # Deduplication report
@@ -153,12 +158,13 @@ for my $bam (@bam_files){
         }
     }
 
-    my @csvrow = [
+    my @csvrow = (
         $bam,
         $total_reads,
         $aligned_reads,
         $unaligned,
         $ambig_reads,
+        $no_seq_reads,
         $dup_reads,
         $unique_reads,
         $total_c,
@@ -168,7 +174,7 @@ for my $bam (@bam_files){
         $unmeth_cph,
         $meth_chh,
         $unmeth_chh
-    ];
+    );
     $summary_csv .= join("\t", @csvrow)."\n";
 
     my $name = $bam;
@@ -179,6 +185,7 @@ for my $bam (@bam_files){
 
     $unaligned = 0      if $unaligned eq '';
     $ambig_reads = 0    if $ambig_reads eq '';
+    $no_seq_reads = 0   if $no_seq_reads eq '';
     $dup_reads = 0      if $dup_reads eq '';
     $unique_reads = 0   if $unique_reads eq '';
     $meth_cpg = 0       if $meth_cpg eq '';
@@ -191,6 +198,7 @@ for my $bam (@bam_files){
     push(@categories_arr,          "'$name'");
     push(@not_aligned_arr,         $unaligned);
     push(@ambig_aligned_arr,       $ambig_reads);
+    push(@no_seq_arr,              $no_seq_reads);
     push(@dup_alignments_arr,      $dup_reads);
     push(@unique_alignments_arr,   $unique_reads);
     push(@meth_cpg_string_arr,     $meth_cpg);
@@ -205,6 +213,7 @@ for my $bam (@bam_files){
 my $categories = join(",", @categories_arr);
 my $not_aligned = join(",", @not_aligned_arr);
 my $ambig_aligned = join(",", @ambig_aligned_arr);
+my $no_seq = join(",", @no_seq_arr);
 my $dup_alignments = join(",", @dup_alignments_arr);
 my $unique_alignments = join(",", @unique_alignments_arr);
 my $meth_cpg_string = join(",", @meth_cpg_string_arr);
@@ -374,13 +383,14 @@ my $html_report = <<'HTMLTEMPLATESTRING';
     		});
 
 		    // Plot setup
-			var plot_colors = ['#0d233a', '#910000', '#2f7ed8', '#8bbc21', '#1aadce', '#492970', '#f28f43', '#77a1e5', '#c42525', '#a6c96a'];
+			var alignment_plot_colors = ['#f28f43', '#0d233a', '#492970', '#2f7ed8', '#8bbc21'];
+			var meth_plot_colors = ['#0d233a', '#2f7ed8', '#8bbc21', '#1aadce', '#910000', '#492970'];
 			var num_samples = {{num_samples}};
 
 			// Alignment Plot
 			var aln_x_index = num_samples * -1;
 			var alignment_plot_options = {
-				colors: plot_colors,
+				colors: alignment_plot_colors,
 				chart: {
 					type: 'area',
 					events: {
@@ -454,12 +464,15 @@ my $html_report = <<'HTMLTEMPLATESTRING';
 						lineColor: '#666666',
 						lineWidth: 1,
 						marker: {
-						    lineWidth: 1,
-						    lineColor: '#666666'
+						    enabled: false
 						}
 					}
 				},
 				series: [
+                    {
+                        name: 'No Genomic Sequence',
+                        data: [ {{no_seq}} ]
+                    },
     				{
                         name: 'Did Not Align',
                         data: [ {{not_aligned}} ]
@@ -510,7 +523,7 @@ my $html_report = <<'HTMLTEMPLATESTRING';
 
 			var meth_x_index = num_samples * -1;
 			var meth_plot_options = {
-				colors: plot_colors,
+				colors: meth_plot_colors,
 				chart: {
 					type: 'area',
 					events: {
@@ -587,8 +600,7 @@ my $html_report = <<'HTMLTEMPLATESTRING';
 						lineColor: '#666666',
 						lineWidth: 1,
 						marker: {
-						    lineWidth: 1,
-						    lineColor: '#666666'
+						    enabled: false
 						}
 					}
 				},
@@ -644,6 +656,7 @@ HTMLTEMPLATESTRING
 # Put in our variables
 $html_report =~ s/{{num_samples}}/$num_samples/g;
 $html_report =~ s/{{categories}}/$categories/g;
+$html_report =~ s/{{no_seq}}/$no_seq/g;
 $html_report =~ s/{{not_aligned}}/$not_aligned/g;
 $html_report =~ s/{{ambig_aligned}}/$ambig_aligned/g;
 $html_report =~ s/{{dup_alignments}}/$dup_alignments/g;
