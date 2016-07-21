@@ -13,11 +13,16 @@ from __future__ import print_function
 
 import argparse
 from collections import defaultdict
+import gzip
 import logging
 import numpy as np
 import os
 from scipy import cluster, stats
 from Bio import SeqIO
+
+import psutil
+import time
+start = time.time()
 
 # Import matplot lib but avoid default X environment
 import matplotlib as mpl
@@ -30,18 +35,15 @@ mpl.rcParams['axes.color_cycle'] = ['#AAAAAA', '#a6cee3', '#1f78b4', '#b2df8a', 
 # mpl.rcParams['axes.color_cycle'] = [list(clr) for clr in matplotlib.cm.brg(linspace(0,1,144))]
 
 def bismark_analysis(input_cov_list, min_cov=10, fasta_fn=None, regions_fn=False, no_plot_scatters=False):
-    """
-    Run bismark comparison analysis - main function
-    """
+    """ Run bismark comparison analysis - main function """
+    
     # Load the data
     data = {}
-    alldata = {}
     for fn in input_cov_list:
-        alldata[fn], data[fn] = load_bismark_cov(fn, min_cov)
+        data[fn] = load_bismark_cov(fn, min_cov)
         if data is None:
             logging.error("Could not parse coverage file: {} Skipping..".format(fn))
             del (data[fn])
-            del (alldata[fn])
             del (input_cov_list[fn])
 
     # Build nicer sample names
@@ -81,7 +83,7 @@ def bismark_analysis(input_cov_list, min_cov=10, fasta_fn=None, regions_fn=False
 
     # TODO: Scatter plot of first two principal components
 
-    # Do coverage analysis
+    # Coverage decay plot
     if fasta_fn is not None:
         if regions_fn is not None:
             regions = load_capture_regions(regions_fn)
@@ -89,8 +91,18 @@ def bismark_analysis(input_cov_list, min_cov=10, fasta_fn=None, regions_fn=False
             regions = None
         (fasta_ref, captured_cgs) = load_fasta_cpg(fasta_fn, regions)
         total_cg_count = len(fasta_ref)
-        coverage_decay_plot(alldata, sample_names, total_cg_count, captured_cgs)
+        coverage_decay_plot(data, sample_names, total_cg_count, captured_cgs)
 
+
+def file_reader(fn):
+    """
+    Method that returns lines from an input file using either normal open
+    (text files) or gzip.open for compressed files.
+    """
+    if fn.endswith('.gz'):
+        return gzip.open(fn, 'r')
+    else:
+        return open(fn, 'r')
 
 def load_bismark_cov(fn, min_cov=10):
     """
@@ -99,52 +111,54 @@ def load_bismark_cov(fn, min_cov=10):
     to load.
     """
     logging.info("Loading {}".format(fn))
-    alldata = defaultdict(dict)
     data = defaultdict(dict)
+    ln = 0
+    last = time.time()
     try:
-        with open(fn, 'r') as fh:
+        with file_reader(fn) as fh:
             for line in fh:
+                ln += 1
+                if ln % 1000000 == 0 or time.time() - last > 15:
+                    logging.debug('  .. {} million lines. Mem: {:.0f}% Loop: {:.2f}s Total: {:.0f}s)'.format(ln/1000000, psutil.phymem_usage()[2], time.time() - last, time.time() - start))
+                    last = time.time()
                 c = line.split()
+                
+                chrom = c[0]
+                chrom = chrom.replace('chr','')
+                key = "{}_{}".format(chrom, c[1]) # chr_pos
+                data[key]['chr'] = chrom
+                data[key]['mb'] = int(float(c[1])/1000000)
+                data[key]['pos'] = c[1]
 
                 # Genome wide coverage input
                 if len(c) == 7:
+                    if ln == 1:
+                        logging.debug('  .. File looks like a genome wide coverage report')
                     meth = float(c[3])
                     unmeth = float(c[4])
-                    cov = meth + unmeth
+                    data[key]['coverage'] = meth + unmeth
                     # strand = c[2]
                     if c[5] is not 'CG':
                         next
-                    methp = (meth / cov)*100 if (cov > 0) else None
+                    data[key]['methylation'] = (meth / cov)*100 if (cov > 0) else None
                 elif len(c) == 6:
+                    if ln == 1:
+                        logging.debug('  .. File looks like a regular coverage report (not genome wide)')
                     meth = float(c[4])
                     unmeth = float(c[5])
-                    cov = meth + unmeth
-                    methp = c[3]
+                    data[key]['coverage'] = meth + unmeth
+                    data[key]['methylation'] = c[3]
                 else:
                     logging.error("Error: Coverage file {} had {} columns instead of 6 or 7.".format(fn, len(c)))
                     return None
 
-                # Add the coverage and % methylation scores
-                chrom = c[0]
-                chrom = chrom.replace('chr','')
-                key = "{}_{}".format(chrom, c[1]) # chr_pos
-                alldata[key]['coverage'] = cov
-                alldata[key]['methylation'] = methp
-                alldata[key]['chr'] = chrom
-                alldata[key]['mb'] = int(float(c[1])/1000000)
-                alldata[key]['pos'] = c[1]
-                if cov >= min_cov:
-                    data[key]['coverage'] = cov
-                    data[key]['methylation'] = methp
-                    data[key]['chr'] = chrom
-                    data[key]['mb'] = int(float(c[1])/1000000)
-                    data[key]['pos'] = c[1]
-
     except IOError as e:
         logging.error("Error loading coverage file: {}".format(fn))
         raise IOError(e)
-
-    return alldata, data
+    
+    logging.debug('  .. complete')
+    
+    return data
 
 
 
