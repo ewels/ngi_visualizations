@@ -7,23 +7,42 @@ my $report_basename = 'bismark_summary_report';
 my $page_title = 'Bismark Summary Report';
 my $num_bam = scalar @bam_files;
 if($num_bam == 0){
-    die("Error: No bismark BAM files found for bismark project summary.");
+    die("Error: No bismark BAM files found for bismark project summary.\n");
 } else {
     warn("Found $num_bam Bismark BAM files..\n");
 }
 
-my $categories = '';
-my $not_aligned = '';
-my $dup_alignments = '';
-my $unique_alignments = '';
-my $meth_cpg_string = '';
-my $unmeth_cpg_string = '';
-my $meth_cph_string = '';
-my $unmeth_cph_string = '';
-my $meth_chh_string = '';
-my $unmeth_chh_string = '';
+my @categories_arr;
+my @not_aligned_arr;
+my @ambig_aligned_arr;
+my @no_seq_arr;
+my @dup_alignments_arr;
+my @unique_alignments_arr;
+my @meth_cpg_string_arr;
+my @unmeth_cpg_string_arr;
+my @meth_cph_string_arr;
+my @unmeth_cph_string_arr;
+my @meth_chh_string_arr;
+my @unmeth_chh_string_arr;
 
-my $summary_csv = "File\tTotal Reads\tAligned Reads\tDuplicate Reads (removed)\tUnique Reads (remaining)\tTotal Cs\tMethylated CpGs\tUnmethylated CpGs\tMethylated CpHs\tUnmethylated CpHs\tMethylated CHHs\tUnmethylated CHHs\n";
+my @summary_csv_fields = (
+    'File',
+    'Total Reads',
+    'Aligned Reads',
+    'Unaligned Reads',
+    'Ambiguously Aligned Reads',
+    'No Genomic Sequence',
+    'Duplicate Reads (removed)',
+    'Unique Reads (remaining)',
+    'Total Cs',
+    'Methylated CpGs',
+    'Unmethylated CpGs',
+    'Methylated CpHs',
+    'Unmethylated CpHs',
+    'Methylated CHHs',
+    'Unmethylated CHHs'
+);
+my $summary_csv = join("\t",@summary_csv_fields)."\n";
 my $num_samples = scalar @bam_files;
 for my $bam (@bam_files){
 
@@ -31,6 +50,9 @@ for my $bam (@bam_files){
     my $base = substr($bam, 0, -4); # removes .bam from the end
     my $total_reads = '';
     my $aligned_reads = '';
+    my $unaligned = '';
+    my $ambig_reads = '';
+    my $no_seq_reads = '';
     my $dup_reads = '';
     my $unique_reads = '';
     my $total_c = '';
@@ -46,52 +68,47 @@ for my $bam (@bam_files){
     my $paired_end = 0;
 
     if ($base =~ /_pe$/){
-	$base  =~ s/_pe$//;
-	$bm_report = $base."_PE_report.txt";
-	$paired_end = 1;
-	# warn "my Base is now: $base\n";
-    }
-    else{
-	$bm_report = $base."_SE_report.txt";
+    	$base  =~ s/_pe$//;
+    	$bm_report = $base."_PE_report.txt";
+    	$paired_end = 1;
+    } else {
+        $bm_report = $base."_SE_report.txt";
     }
 
     if (-e $bm_report){ # single end
-	warn "Reading from Bismark report: $bm_report\n";
-    }
-    else{
-	die "Could not find Bismark report ($bm_report) to open\n";
+	   warn "Reading from Bismark report: $bm_report\n";
+    } else {
+    	die "Could not find Bismark report ($bm_report) to open\n";
     }
 
     if (open(BISMARK_REPORT, "<", $bm_report)){
 
-	while(<BISMARK_REPORT>){
-	    chomp;
-	    if ($paired_end){
-		if (/^Sequence pairs analysed in total:\s+(\d+)$/){
-		    $total_reads = $1;
-		    # warn "Extracted the following number of total reads: $1\n"; sleep(1);
-		}
-	    }
-	    else{
-		if (/^Sequences analysed in total:\s+(\d+)$/){
-		    $total_reads = $1;
-		    # warn "Extracted the following number of total reads: $1\n";
-		}
-	    }
-	}
-	close(BISMARK_REPORT);
-    }
-    else {
-	warn "Warning! Couldn't open bismark report $bm_report: $!";
+    	while(<BISMARK_REPORT>){
+    	    chomp;
+    	    if ($paired_end){
+        		$total_reads = $1 if (/^Sequence pairs analysed in total:\s+(\d+)$/);
+                $unaligned = $1 if (/^Sequence pairs with no alignments under any condition:\s+(\d+)$/);
+                $ambig_reads = $1 if (/^Sequence pairs did not map uniquely:\s+(\d+)$/);
+                $no_seq_reads = $1 if (/^Sequence pairs which were discarded because genomic sequence could not be extracted:\s+(\d+)$/);
+    	    }
+    	    else{
+        		$total_reads = $1 if (/^Sequences analysed in total:\s+(\d+)$/);
+                $unaligned = $1 if (/^Sequences with no alignments under any condition:\s+(\d+)$/);
+                $ambig_reads = $1 if (/^Sequences did not map uniquely:\s+(\d+)$/);
+                $no_seq_reads = $1 if (/^Sequences which were discarded because genomic sequence could not be extracted:\s+(\d+)$/);
+    	    }
+    	}
+    	close(BISMARK_REPORT);
+    } else {
+        warn "Warning! Couldn't open bismark report $bm_report: $!";
     }
 
     # Deduplication report
     my $dedup;
     if ($paired_end){
-	$dedup = $base."_pe.deduplication_report.txt";
-    }
-    else{
-	$dedup = $base.".deduplication_report.txt";
+        $dedup = $base."_pe.deduplication_report.txt";
+    } else {
+        $dedup = $base.".deduplication_report.txt";
     }
 
     if(-e $dedup){
@@ -100,7 +117,6 @@ for my $bam (@bam_files){
                 chomp;
                 if(/^Total number of alignments analysed in .+:\s+(\d+)$/){
                     $aligned_reads = $1;
-		    # warn "Extracted the following number of alignments analysed: $1\n";
                 }
                 if(/^Total number duplicated alignments removed:\s+(\d+)/){
                     $dup_reads = $1;
@@ -118,37 +134,23 @@ for my $bam (@bam_files){
     # Methylation Extraction report
     my $meth_extract;
     if ($paired_end){
-	$meth_extract= $base."_pe.deduplicated.bam_splitting_report.txt";
+        $meth_extract= $base."_pe.deduplicated.bam_splitting_report.txt";
     }
     else{
-	$meth_extract= $base.".deduplicated.bam_splitting_report.txt";
+        $meth_extract= $base.".deduplicated.bam_splitting_report.txt";
     }
 
     if(-e $dedup){
         if(open(METHEXTR, "<", $meth_extract)){
             while(<METHEXTR>){
                 chomp;
-                if(/^Total number of C's analysed:\s+(\d+)$/){
-                    $total_c = $1;
-                }
-                if(/^Total methylated C's in CpG context:\s+(\d+)/){
-                    $meth_cpg = $1;
-                }
-                if(/^Total methylated C's in CHG context:\s+(\d+)/){
-                    $meth_cph = $1;
-                }
-                if(/^Total methylated C's in CHH context:\s+(\d+)/){
-                    $meth_chh = $1;
-                }
-                if(/^Total C to T conversions in CpG context:\s+(\d+)/){
-                    $unmeth_cpg = $1;
-                }
-                if(/^Total C to T conversions in CHG context:\s+(\d+)/){
-                    $unmeth_cph = $1;
-                }
-                if(/^Total C to T conversions in CHH context:\s+(\d+)/){
-                    $unmeth_chh = $1;
-                }
+                $total_c = $1 if(/^Total number of C's analysed:\s+(\d+)$/);
+                $meth_cpg = $1 if(/^Total methylated C's in CpG context:\s+(\d+)/);
+                $meth_cph = $1 if(/^Total methylated C's in CHG context:\s+(\d+)/);
+                $meth_chh = $1 if(/^Total methylated C's in CHH context:\s+(\d+)/);
+                $unmeth_cpg = $1 if(/^Total C to T conversions in CpG context:\s+(\d+)/);
+                $unmeth_cph = $1 if(/^Total C to T conversions in CHG context:\s+(\d+)/);
+                $unmeth_chh = $1 if(/^Total C to T conversions in CHH context:\s+(\d+)/);
             }
             close(METHEXTR);
         } else {
@@ -156,38 +158,70 @@ for my $bam (@bam_files){
         }
     }
 
-    $summary_csv .= "$bam\t$total_reads\t$dup_reads\t$unique_reads\t$total_c\t$meth_cpg\t$unmeth_cpg\t$meth_cph\t$unmeth_cph\t$meth_chh\t$unmeth_chh\n";
+    my @csvrow = (
+        $bam,
+        $total_reads,
+        $aligned_reads,
+        $unaligned,
+        $ambig_reads,
+        $no_seq_reads,
+        $dup_reads,
+        $unique_reads,
+        $total_c,
+        $meth_cpg,
+        $unmeth_cpg,
+        $meth_cph,
+        $unmeth_cph,
+        $meth_chh,
+        $unmeth_chh
+    );
+    $summary_csv .= join("\t", @csvrow)."\n";
 
     my $name = $bam;
     $name =~ s/_bismark.bam$//;
     $name =~ s/\.fq\.gz$//;
     $name =~ s/_trimmed$//;
     $name =~ s/_[12]$//;
-    my $unaligned = $total_reads - $dup_reads - $unique_reads;
 
-    $unaligned = 0 if $unaligned < 0;
-    $unaligned = 0 if $unaligned eq '';
-    $dup_reads = 0 if $dup_reads eq '';
-    $unique_reads = 0 if $unique_reads eq '';
-    $meth_cpg = 0 if $meth_cpg eq '';
-    $unmeth_cpg = 0 if $unmeth_cpg eq '';
-    $meth_cph = 0 if $meth_cph eq '';
-    $unmeth_cph = 0 if $unmeth_cph eq '';
-    $meth_chh = 0 if $meth_chh eq '';
-    $unmeth_chh = 0 if $unmeth_chh eq '';
+    $unaligned = 0      if $unaligned eq '';
+    $ambig_reads = 0    if $ambig_reads eq '';
+    $no_seq_reads = 0   if $no_seq_reads eq '';
+    $dup_reads = 0      if $dup_reads eq '';
+    $unique_reads = 0   if $unique_reads eq '';
+    $meth_cpg = 0       if $meth_cpg eq '';
+    $unmeth_cpg = 0     if $unmeth_cpg eq '';
+    $meth_cph = 0       if $meth_cph eq '';
+    $unmeth_cph = 0     if $unmeth_cph eq '';
+    $meth_chh = 0       if $meth_chh eq '';
+    $unmeth_chh = 0     if $unmeth_chh eq '';
 
-    $categories .= "'$name', ";
-    $not_aligned .= $unaligned.', ';
-    $dup_alignments .= $dup_reads.', ';
-    $unique_alignments .= $unique_reads.', ';
-    $meth_cpg_string .= $meth_cpg.', ';
-    $unmeth_cpg_string .= $unmeth_cpg.', ';
-    $meth_cph_string .= $meth_cph.', ';
-    $unmeth_cph_string .= $unmeth_cph.', ';
-    $meth_chh_string .= $meth_chh.', ';
-    $unmeth_chh_string .= $unmeth_chh.', ';
+    push(@categories_arr,          "'$name'");
+    push(@not_aligned_arr,         $unaligned);
+    push(@ambig_aligned_arr,       $ambig_reads);
+    push(@no_seq_arr,              $no_seq_reads);
+    push(@dup_alignments_arr,      $dup_reads);
+    push(@unique_alignments_arr,   $unique_reads);
+    push(@meth_cpg_string_arr,     $meth_cpg);
+    push(@unmeth_cpg_string_arr,   $unmeth_cpg);
+    push(@meth_cph_string_arr,     $meth_cph);
+    push(@unmeth_cph_string_arr,   $unmeth_cph);
+    push(@meth_chh_string_arr,     $meth_chh);
+    push(@unmeth_chh_string_arr,   $unmeth_chh);
 
 }
+
+my $categories = join(",", @categories_arr);
+my $not_aligned = join(",", @not_aligned_arr);
+my $ambig_aligned = join(",", @ambig_aligned_arr);
+my $no_seq = join(",", @no_seq_arr);
+my $dup_alignments = join(",", @dup_alignments_arr);
+my $unique_alignments = join(",", @unique_alignments_arr);
+my $meth_cpg_string = join(",", @meth_cpg_string_arr);
+my $unmeth_cpg_string = join(",", @unmeth_cpg_string_arr);
+my $meth_cph_string = join(",", @meth_cph_string_arr);
+my $unmeth_cph_string = join(",", @unmeth_cph_string_arr);
+my $meth_chh_string = join(",", @meth_chh_string_arr);
+my $unmeth_chh_string = join(",", @unmeth_chh_string_arr);
 
 # Write the numeric data to a summary file
 my $summary_fn = $report_basename.".txt";
@@ -211,7 +245,6 @@ my $html_report = <<'HTMLTEMPLATESTRING';
 		}
 		.container {
 			margin:0 auto;
-			max-width:1200px;
 		}
 		.header h1,
 		.header img {
@@ -339,24 +372,25 @@ my $html_report = <<'HTMLTEMPLATESTRING';
 					var m_type = $(this).text().trim();
 					meth_plot_options.series = meth_calls_data[m_type];
 					if(m_type == 'CpG'){
-						meth_plot_options.colors = plot_colors.slice(0, 2);
+						meth_plot_options.colors = meth_plot_colors.slice(0, 2);
 					} else if(m_type == 'CHG'){
-						meth_plot_options.colors = plot_colors.slice(2, 5);
+						meth_plot_options.colors = meth_plot_colors.slice(2, 5);
 					} else if(m_type == 'CHH'){
-						meth_plot_options.colors = plot_colors.slice(4, 7);
+						meth_plot_options.colors = meth_plot_colors.slice(4, 7);
 					}
 					$('#methylation_context').highcharts(meth_plot_options);
 				}
     		});
 
 		    // Plot setup
-			var plot_colors = ['#0d233a', '#2f7ed8', '#8bbc21', '#910000', '#1aadce', '#492970', '#f28f43', '#77a1e5', '#c42525', '#a6c96a'];
+			var alignment_plot_colors = ['#f28f43', '#0d233a', '#492970', '#2f7ed8', '#8bbc21'];
+			var meth_plot_colors = ['#0d233a', '#2f7ed8', '#8bbc21', '#1aadce', '#910000', '#492970'];
 			var num_samples = {{num_samples}};
 
 			// Alignment Plot
 			var aln_x_index = num_samples * -1;
 			var alignment_plot_options = {
-				colors: plot_colors,
+				colors: alignment_plot_colors,
 				chart: {
 					type: 'area',
 					events: {
@@ -430,22 +464,29 @@ my $html_report = <<'HTMLTEMPLATESTRING';
 						lineColor: '#666666',
 						lineWidth: 1,
 						marker: {
-						    lineWidth: 1,
-						    lineColor: '#666666'
+						    enabled: false
 						}
 					}
 				},
 				series: [
+                    {
+                        name: 'No Genomic Sequence',
+                        data: [ {{no_seq}} ]
+                    },
     				{
                         name: 'Did Not Align',
                         data: [ {{not_aligned}} ]
+                    },
+                    {
+                        name: 'Aligned Ambiguously',
+                        data: [ {{ambig_aligned}} ]
                     },
     				{
     					name: 'Duplicate Alignments',
     					data: [ {{dup_alignments}} ]
     				},
                     {
-                        name: 'Aligned Uniquely',
+                        name: 'Deduplicated Unique Alignments',
                         data: [ {{unique_alignments}} ]
 					}
 				]
@@ -482,7 +523,7 @@ my $html_report = <<'HTMLTEMPLATESTRING';
 
 			var meth_x_index = num_samples * -1;
 			var meth_plot_options = {
-				colors: plot_colors,
+				colors: meth_plot_colors,
 				chart: {
 					type: 'area',
 					events: {
@@ -559,8 +600,7 @@ my $html_report = <<'HTMLTEMPLATESTRING';
 						lineColor: '#666666',
 						lineWidth: 1,
 						marker: {
-						    lineWidth: 1,
-						    lineColor: '#666666'
+						    enabled: false
 						}
 					}
 				},
@@ -616,7 +656,9 @@ HTMLTEMPLATESTRING
 # Put in our variables
 $html_report =~ s/{{num_samples}}/$num_samples/g;
 $html_report =~ s/{{categories}}/$categories/g;
+$html_report =~ s/{{no_seq}}/$no_seq/g;
 $html_report =~ s/{{not_aligned}}/$not_aligned/g;
+$html_report =~ s/{{ambig_aligned}}/$ambig_aligned/g;
 $html_report =~ s/{{dup_alignments}}/$dup_alignments/g;
 $html_report =~ s/{{unique_alignments}}/$unique_alignments/g;
 $html_report =~ s/{{report_timestamp}}/$report_timestamp/g;
