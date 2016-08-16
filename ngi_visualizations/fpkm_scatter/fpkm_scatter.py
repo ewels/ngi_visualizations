@@ -88,14 +88,18 @@ def load_fpkm_counts (file):
     logging.info("Processing {}".format(file))
     try:
         with open(file, 'r') as fh:
-            # Skip the header
-            next(fh)
+            # Read the header
+            headers = fh.readline().split("\t")
+            try:
+                FPKM_idx = headers.index('FPKM')
+            except ValueError:
+                FPKM_idx = 9
             # Iterate through the file
             for line in fh:
                 line = line.strip()
                 cols = line.split("\t")
                 gene_id = cols[0]
-                FPKM = cols[9]
+                FPKM = cols[FPKM_idx]
                 counts[gene_id] = FPKM
     except IOError as e:
         logging.error("Error loading cufflinks FPKM file: {}\n{}".format(file, e))
@@ -165,7 +169,7 @@ def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear
     for gene in sample_1.keys():
         try:
             sample_2[gene]
-        except NameError:
+        except KeyError:
             missing_genes += 1
         else:
             x_vals.append(float(sample_1[gene]))
@@ -173,7 +177,7 @@ def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear
     if missing_genes > 0:
         logging.warn("Warning: {} genes mentioned in sample 1 not found in sample 2".format(missing_genes))
     
-    # Calculate the r squared    
+    # Calculate the r squared
     corr = np.corrcoef(x_vals, y_vals)[0,1]
     r_squared = corr ** 2
     print ("R squared for {} = {}".format(output_fn, r_squared))
@@ -189,7 +193,7 @@ def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear
     max_xy = max(x2, y2)
     if linear is True:
         axes.set(xscale='log', xlim=[0,max_xy])
-        axes.set(yscale='log', ylim=[0,max_xy])        
+        axes.set(yscale='log', ylim=[0,max_xy])
     else:
         axes.set(xscale='log', xlim=[1,max_xy])
         axes.set(yscale='log', ylim=[1,max_xy])
