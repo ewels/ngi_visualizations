@@ -40,8 +40,8 @@ python count_biotypes.py -g <annotation.gtf> <aligned_1.bam> .. <aligned_n.bam>
 Within a python script:
 
 ```python
-from ngi_visualizations.biotypes import count_biotypes
-count_biotypes.main(annotation_file_path_, input_bam_file_paths)
+from ngi_visulizations import count_biotypes
+count_biotypes(annotation_file_path_, input_bam_file_paths)
 ```
 
 If importing, individual functions can be called for a more
