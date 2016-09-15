@@ -41,7 +41,7 @@ Within a python script:
 
 ```python
 from ngi_visulizations import count_biotypes
-count_biotypes.count_biotypes(annotation_file_path_, input_bam_file_paths)
+count_biotypes(annotation_file_path_, input_bam_file_paths)
 ```
 
 If importing, individual functions can be called for a more

@@ -23,7 +23,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-def count_biotypes(annotation_file, input_bam_list, biotype_flag='gene_type', feature_type='exon', num_lines=10000000, no_overlap=False, equidistant_cols=False):
+def main(annotation_file, input_bam_list, biotype_flag='gene_type', feature_type='exon', num_lines=10000000, no_overlap=False, equidistant_cols=False):
     """
     Count the biotypes
     """
@@ -33,6 +33,8 @@ def count_biotypes(annotation_file, input_bam_list, biotype_flag='gene_type', fe
             raise IOError("Fatal error - can't find annotation file {}".format(annotation_file))
     else:
         raise ValueError("Fatal error - annotation file not specified")
+    if isinstance(input_bam_list, str):
+        input_bam_list = [input_bam_list]
     for fname in input_bam_list:
         if not os.path.isfile(fname):
             raise IOError("Fatal error - can't find input file {}".format(fname))
@@ -131,7 +133,7 @@ def parse_gtf_biotypes(annotation_file, biotype_label='gene_type', count_feature
                         logging.warning("\nChanging biotype label from {} to {}".format(biotype_label, attr))
                         biotype_label = attr
             
-            # Initiate count object and add feature to selected_features set  
+            # Initiate count object and add feature to selected_features set
             if biotype_label in feature.attr:
                 used_features += 1
                 # look for any matching translations
@@ -149,7 +151,7 @@ def parse_gtf_biotypes(annotation_file, biotype_label='gene_type', count_feature
             feature_type_biotype_counts[feature.type][feature.attr[biotype_label]] = 1
             feature_type_biotype_labelled[feature.type] += 1
         else:
-            feature_type_biotype_unlabelled[feature.type] += 1     
+            feature_type_biotype_unlabelled[feature.type] += 1
     
     # Print the log information about what's in the GTF file
     logging.info("\n\n{} features with biotype: {}".format(count_feature_type, used_features))
@@ -165,7 +167,7 @@ def parse_gtf_biotypes(annotation_file, biotype_label='gene_type', count_feature
     if(used_features == 0):
         raise ValueError('No features have biotypes!')
     
-    return {'selected_features': selected_features, # 'introns': introns, 'promoters': promoters, 
+    return {'selected_features': selected_features, # 'introns': introns, 'promoters': promoters,
             'biotype_count_dict': {'biotype_counts': biotype_counts, 'biotype_lengths':biotype_lengths}}
 
 
@@ -204,7 +206,7 @@ def count_biotype_overlaps(aligned_bam, selected_features, biotype_count_dict, n
             if len(iset) == 1:
                 key = list(iset)[0]
             elif len(iset) == 0:
-                key = 'no_overlap'                    
+                key = 'no_overlap'
                     
             biotype_count_dict['biotype_counts'][key] += 1
             biotype_count_dict['biotype_lengths'][key][alnmt.iv.length] += 1
@@ -333,7 +335,7 @@ def plot_bars(biotype_count_dict, output_basename, title="Annotation Biotype Ali
         y = [(x/total_reads)*100 for x in counts]
         return ["%.2f%%" % z for z in y]
     ax2_labels = percent_total(ax2.get_xticks())
-    ax2.set_xticklabels(ax2_labels)    
+    ax2.set_xticklabels(ax2_labels)
     
     # LABELS
     axes.set_xlabel('Number of Reads')
@@ -400,7 +402,7 @@ def plot_epic_histogram(biotype_count_dict, output_basename, title="Annotation B
                 feature_reads += biotype_lengths[bt][x]
                 bp_counts[x] += biotype_lengths[bt][x]
                 min_length = min(x, min_length)
-                max_length = max(x, max_length)    
+                max_length = max(x, max_length)
     
     # CUT OFF EXTREME READ LENGTHS
     # Trim off top and bottom 1% read lengths
@@ -569,13 +571,13 @@ def distinguishable_colours(n_colours, use_equidistant_cols):
     bg = [1,1,1]    #Assumes background is white
 
     #Generate 30^3 RGB triples to choose from.
-    n_grid = 30    
+    n_grid = 30
     x = numpy.linspace(0,1,n_grid)
     R = numpy.array([x]*900).flatten()
     G = numpy.array([[i]*30 for i in x]*30).flatten()
     B = numpy.array([[i]*900 for i in x]).flatten()
 
-    rgb = numpy.array([R,G,B]).T #27000 by 3 matrix 
+    rgb = numpy.array([R,G,B]).T #27000 by 3 matrix
 
     if n_colours > len(rgb)/3:    #>27000
         logging.warning("You can't distinguish that many colours, dingus. " + \
@@ -592,7 +594,7 @@ def distinguishable_colours(n_colours, use_equidistant_cols):
     mindist2.fill(float('Inf'))
     dX = lab - bglab
     dist2 = numpy.sum(numpy.square(dX), axis=1)
-    mindist2 = numpy.minimum(dist2, mindist2)    
+    mindist2 = numpy.minimum(dist2, mindist2)
 
     #Pick the colours
     colours = numpy.zeros((n_colours, 3))
@@ -638,7 +640,7 @@ if __name__ == "__main__":
     # Initialise logger
     numeric_log_level = getattr(logging, kwargs['log_level'].upper(), None)
     if kwargs['log_output'] != 'stdout':
-        logging.basicConfig(filename=kwargs['log_output'], format='', level=numeric_log_level) 
+        logging.basicConfig(filename=kwargs['log_output'], format='', level=numeric_log_level)
     else:
         logging.basicConfig(format='', level=numeric_log_level)
     # Remove logging parameters
@@ -646,5 +648,5 @@ if __name__ == "__main__":
     kwargs.pop('log_output', None)
     
     # Call count_biotypes()
-    count_biotypes(**kwargs)
+    main(**kwargs)
     
