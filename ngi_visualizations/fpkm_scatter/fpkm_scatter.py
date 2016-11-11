@@ -16,6 +16,7 @@ import logging
 import numpy as np
 import os
 import re
+import itertools 
 
 # Import matplot lib but avoid default X environment
 import matplotlib
@@ -26,56 +27,56 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
     """
     Main function. Takes input files and makes a plot.
     """
-    
-    # Get proper paths for input files
-    input_1 = os.path.realpath(input_files[0])
-    input_2 = os.path.realpath(input_files[1])
-    
-    # First off, assume that we have two FPKM files from cufflinks
-    if summary is False:
-       
-        # Parse the input files
-        sample_1 = load_fpkm_counts(input_1)
-        sample_2 = load_fpkm_counts(input_2)
+    for f,y in itertools.combinations(input_files,2):
+        # Get proper paths for input files
+        input_1 = os.path.realpath(f)
+        input_2 = os.path.realpath(y)
         
-        # What are the sample names?
-        sample_1_name = os.path.splitext(os.path.basename(input_1))[0]
-        sample_2_name = os.path.splitext(os.path.basename(input_2))[0]
+        # First off, assume that we have two FPKM files from cufflinks
+        if summary is False:
+           
+            # Parse the input files
+            sample_1 = load_fpkm_counts(input_1)
+            sample_2 = load_fpkm_counts(input_2)
+            
+            # What are the sample names?
+            sample_1_name = os.path.splitext(os.path.basename(input_1))[0]
+            sample_2_name = os.path.splitext(os.path.basename(input_2))[0]
+            
+            # File name
+            if output_fn is None:
+                output_fn = "{}-{}".format(sample_1_name, sample_2_name)
         
-        # File name
-        if output_fn is None:
-            output_fn = "{}-{}".format(sample_1_name, sample_2_name)
-
-        # Make the plot
-        plot_filenames = plot_fpkm_scatter(sample_1, sample_2, sample_1_name, sample_2_name, output_fn=output_fn, linear=linear)
-    
-    # We have a summary file
-    else:
-        # Parse the input files
-        # returns counts[sample_name][gene_id] = fpkm_count
-        condition_1 = load_summary_fpkm_counts(input_1)
-        condition_2 = load_summary_fpkm_counts(input_2)
+            # Make the plot
+            plot_filenames = plot_fpkm_scatter(sample_1, sample_2, sample_1_name, sample_2_name, output_fn=output_fn, linear=linear)
         
-        # Condition basenames
-        cond_1_basename = os.path.splitext(os.path.basename(input_1))[0]
-        cond_2_basename = os.path.splitext(os.path.basename(input_2))[0]
+        # We have a summary file
+        else:
+            # Parse the input files
+            # returns counts[sample_name][gene_id] = fpkm_count
+            condition_1 = load_summary_fpkm_counts(input_1)
+            condition_2 = load_summary_fpkm_counts(input_2)
+            
+            # Condition basenames
+            cond_1_basename = os.path.splitext(os.path.basename(input_1))[0]
+            cond_2_basename = os.path.splitext(os.path.basename(input_2))[0]
+            
+            # Find project names from sample ID (P1234_*)
+            pname_re = re.compile('^P\d+_')
+            cond_1_proj = pname_re.search(condition_1.keys()[0]).group(0)
+            cond_2_proj = pname_re.search(condition_2.keys()[0]).group(0)
+            
+            # Go through each sample pair
+            for cond_1_sample in condition_1.keys():
+                try:
+                    cond_2_sample = cond_1_sample.replace(cond_1_proj, cond_2_proj)
+                    condition_2[cond_2_sample]
+                    outfile = "{}_{}-{}_{}".format(cond_1_basename, cond_1_sample, cond_2_basename, cond_2_sample)
+                    
+                    plot_filenames = plot_fpkm_scatter(condition_1[cond_1_sample], condition_2[cond_2_sample], cond_1_sample, cond_2_sample, output_fn=outfile, linear=linear)
+                except KeyError:
+                    logging.warning("Warning: Sample {} not found in {}".format(sample, cond_2_basename))
         
-        # Find project names from sample ID (P1234_*)
-        pname_re = re.compile('^P\d+_')
-        cond_1_proj = pname_re.search(condition_1.keys()[0]).group(0)
-        cond_2_proj = pname_re.search(condition_2.keys()[0]).group(0)
-        
-        # Go through each sample pair
-        for cond_1_sample in condition_1.keys():
-            try:
-                cond_2_sample = cond_1_sample.replace(cond_1_proj, cond_2_proj)
-                condition_2[cond_2_sample]
-                outfile = "{}_{}-{}_{}".format(cond_1_basename, cond_1_sample, cond_2_basename, cond_2_sample)
-                
-                plot_filenames = plot_fpkm_scatter(condition_1[cond_1_sample], condition_2[cond_2_sample], cond_1_sample, cond_2_sample, output_fn=outfile, linear=linear)
-            except KeyError:
-                logging.warning("Warning: Sample {} not found in {}".format(sample, cond_2_basename))
-    
     
 def load_fpkm_counts (file):
     """
@@ -139,6 +140,9 @@ def load_summary_fpkm_counts (file):
         return None
             
     return counts
+
+
+
 
 
 
@@ -233,7 +237,7 @@ if __name__ == "__main__":
                         help="Level of log messages to display")
     parser.add_argument("-u", "--log-output", dest="log_output", default='stdout',
                         help="Log output filename. Default: stdout")
-    parser.add_argument("input_files", metavar='<input files>', nargs=2,
+    parser.add_argument("input_files", metavar='<input files>', nargs='+',
                         help="List of summary FPKM / cufflinks FPKM results files. See README.MD for more information.")
     kwargs = vars(parser.parse_args())
     
