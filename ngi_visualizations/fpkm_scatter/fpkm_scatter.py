@@ -30,7 +30,6 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
     Main function. Takes input files and makes a plot.
     """
     R_dict={}
-    #abc=0
     #iterate over all uniqe pairs of input files
     for f,y in itertools.combinations(input_files,2):
         # Get proper paths for input files
@@ -86,8 +85,8 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
                     plot_filenames = plot_fpkm_scatter(condition_1[cond_1_sample], condition_2[cond_2_sample], cond_1_sample, cond_2_sample, output_fn=outfile, linear=linear)
                 except KeyError:
                     logging.warning("Warning: Sample {} not found in {}".format(sample, cond_2_basename))
-    with open('R2_values.txt', 'w') as f:
-        print ("Saving R2 values to R2_values.txt")
+    with open('R2_values.csv', 'w') as f:
+        print ("Saving R2 values to R2_values.csv")
         for x in R_dict.keys():
             if R_dict[x] is 'nan':
                 continue
