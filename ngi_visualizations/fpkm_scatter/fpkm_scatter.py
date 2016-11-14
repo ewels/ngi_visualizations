@@ -16,7 +16,9 @@ import logging
 import numpy as np
 import os
 import re
-import itertools 
+import itertools
+import sys
+from collections import OrderedDict
 
 # Import matplot lib but avoid default X environment
 import matplotlib
@@ -27,6 +29,9 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
     """
     Main function. Takes input files and makes a plot.
     """
+    R_dict={}
+    #abc=0
+    #iterate over all uniqe pairs of input files
     for f,y in itertools.combinations(input_files,2):
         # Get proper paths for input files
         input_1 = os.path.realpath(f)
@@ -42,13 +47,18 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
             # What are the sample names?
             sample_1_name = os.path.splitext(os.path.basename(input_1))[0]
             sample_2_name = os.path.splitext(os.path.basename(input_2))[0]
-            
+            #print(sample_1_name)
+            #print(sample_2_name)
             # File name
             if output_fn is None:
-                output_fn = "{}-{}".format(sample_1_name, sample_2_name)
-        
+                output_fn=False
             # Make the plot
+            plot_filenames= OrderedDict 
             plot_filenames = plot_fpkm_scatter(sample_1, sample_2, sample_1_name, sample_2_name, output_fn=output_fn, linear=linear)
+            #Extract the R-value
+            #Get the key from the sample names 
+            fn_key = "{}-{}".format(sample_1_name, sample_2_name) 
+            R_dict[fn_key]= plot_filenames[fn_key]
         
         # We have a summary file
         else:
@@ -76,8 +86,17 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
                     plot_filenames = plot_fpkm_scatter(condition_1[cond_1_sample], condition_2[cond_2_sample], cond_1_sample, cond_2_sample, output_fn=outfile, linear=linear)
                 except KeyError:
                     logging.warning("Warning: Sample {} not found in {}".format(sample, cond_2_basename))
-        
-    
+    with open('R2_values.txt', 'w') as f:
+        print ("Saving R2 values to R2_values.txt")
+        for x in R_dict.keys():
+            if R_dict[x] is 'nan':
+                continue
+            else:
+                try:
+                    f.write("{}\t{}\n".format(x,R_dict[x]))
+                except IOError:
+                    continue 
+
 def load_fpkm_counts (file):
     """
     Reads FPKM file and returns a dict of counts.
@@ -96,12 +115,18 @@ def load_fpkm_counts (file):
             except ValueError:
                 FPKM_idx = 9
             # Iterate through the file
-            for line in fh:
-                line = line.strip()
-                cols = line.split("\t")
-                gene_id = cols[0]
-                FPKM = cols[FPKM_idx]
-                counts[gene_id] = FPKM
+            try:
+                for line in fh:
+                    line = line.strip()
+                    cols = line.split("\t")
+                    gene_id = cols[0]
+                    FPKM = cols[FPKM_idx]
+                    counts[gene_id] = FPKM
+            except IndexError:
+                print ("""One of the input files is not of valid format, are you sure that it's a FPKM file?
+    exiting""")
+                sys.exit()
+
     except IOError as e:
         logging.error("Error loading cufflinks FPKM file: {}\n{}".format(file, e))
         raise IOError(e)
@@ -155,11 +180,9 @@ def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear
     Returns a dict containing filenames of PNG and PDF graphs as a dict for 
     each sample.
     """
-    
     # Output filename
     if output_fn is False:
-        output_fn = "{}_{}".format(x_lab, y_lab)
-    
+        output_fn = "{}-{}".format(x_lab, y_lab)
     # SET UP PLOT
     fig = plt.figure()
     axes = fig.add_subplot(111, aspect=1.0)
@@ -217,11 +240,14 @@ def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear
     logging.info("Saving to {} and {}".format(png_fn, pdf_fn))
     plt.savefig(png_fn)
     plt.savefig(pdf_fn)
+    
+    # Return the filenames and R2
+    return {'png': png_fn, 'pdf': pdf_fn, output_fn:r_squared }
 
-    # Return the filenames
-    return {'png': png_fn, 'pdf': pdf_fn}
-
-
+def make_heatmap(r_values):
+    """
+    Takes a dict of r2 values and generates a heatmap
+    """
     
     
 if __name__ == "__main__":
