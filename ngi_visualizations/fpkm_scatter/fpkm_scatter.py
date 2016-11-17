@@ -58,7 +58,6 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
             #Get the key from the sample names 
             fn_key = "{}-{}".format(sample_1_name, sample_2_name) 
             R_dict[fn_key]= plot_filenames[fn_key]
-        
         # We have a summary file
         else:
             # Parse the input files
@@ -95,7 +94,30 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
    #                 f.write("{}\t{}\n".format(x,R_dict[x]))
    #             except IOError:
    #                 continue 
-    
+    if summary is False:
+        keys=R_dict.keys()
+        keys=set()
+        for i in R_dict.keys():
+            keys.update(i.split('-'))
+        keys=sorted(list(keys))
+
+        with open('R2_values.csv', 'w') as f:
+            f.write("\t{}\n".format("\t".join(keys)))
+            for r in keys:
+                f.write(r)
+                for c in keys:
+                    try:
+                        f.write("\t{}".format(R_dict[r][c]))
+                    except KeyError:
+                        try:
+                            f.write("\t{}".format(R_dict[c][r]))
+                        except KeyError:
+                            f.write("\t")
+                            
+                f.write("\n")
+
+
+
     make_heatmap(R_dict)
 
 def load_fpkm_counts (file):
@@ -245,8 +267,6 @@ def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear
     return {'png': png_fn, 'pdf': pdf_fn, output_fn:r_squared }
 
 
-
-
 def make_heatmap(r_values):
     """
     Takes a dict of r2 values and generates a heatmap using matplotlib
@@ -299,16 +319,9 @@ def make_heatmap(r_values):
     fig = plt.gcf()
     #fig.set_size_inches(8, 11)
 
-    #margins( x=1, y=1)
-
-    #fig.set_size_inches(18.5, 10.5)
-    #DefaultSize = fig.get_size_inches()
-    #fig.set_size_inches( (DefaultSize[0]*2, DefaultSize[1]*2) )
-
     ax.set_frame_on(False)
     #make the plot square
-    plt.axis('equal') 
-
+    plt.gca().set_aspect('equal', adjustable='box')
     # put the major ticks at the middle of each cell
     ax.set_yticks(np.arange(data.shape[0]) +0.5 , minor=False)
     ax.set_xticks(np.arange(data.shape[1]) +0.5 , minor=False)
@@ -316,10 +329,8 @@ def make_heatmap(r_values):
     # want a more natural, table-like display
     ax.invert_yaxis()
     ax.xaxis.tick_top()
-
-    ax.get_yaxis().set_tick_params(direction='in')
     
-    #adjust plot position
+    #adjust plot position to make room for longer sample names:
     plt.subplots_adjust(bottom=None, right=None, left=0.3, top = 0.7)
     #plt.tight_layout()
     # Set the labels
@@ -330,18 +341,17 @@ def make_heatmap(r_values):
     # rotate the plot
     plt.xticks(rotation=90)
 
-    
     ax.grid(False)
     # Turn off all the ticks
     ax = plt.gca()
     
     #remove small ticks
-   # for t in ax.xaxis.get_major_ticks():
-   #     t.tick1On = False
-   #     t.tick2On = False
-   # for t in ax.yaxis.get_major_ticks():
-   #     t.tick1On = False
-   #     t.tick2On = False
+    for t in ax.xaxis.get_major_ticks():
+        t.tick1On = False
+        t.tick2On = False
+    for t in ax.yaxis.get_major_ticks():
+        t.tick1On = False
+        t.tick2On = False
     
     savefig('heatmap.png')
     return None  
