@@ -6,7 +6,7 @@ Takes FPKM counts from two conditions and makes a scatter plot.
 Also calculates a r-squared correlation score.
 
 Either takes two Cufflinks FPKM summary files or a summary file
-with multiple samples.
+wmith multiple samples.
 """
 
 from __future__ import print_function
@@ -18,12 +18,13 @@ import os
 import re
 import itertools
 import sys
-from collections import OrderedDict
-
+import re
+from collections import defaultdict
 # Import matplot lib but avoid default X environment
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from pylab import *
 
 def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts', linear=False):
     """
@@ -52,7 +53,6 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
             if output_fn is None:
                 output_fn=False
             # Make the plot
-            plot_filenames= OrderedDict 
             plot_filenames = plot_fpkm_scatter(sample_1, sample_2, sample_1_name, sample_2_name, output_fn=output_fn, linear=linear)
             #Extract the R-value
             #Get the key from the sample names 
@@ -85,16 +85,18 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
                     plot_filenames = plot_fpkm_scatter(condition_1[cond_1_sample], condition_2[cond_2_sample], cond_1_sample, cond_2_sample, output_fn=outfile, linear=linear)
                 except KeyError:
                     logging.warning("Warning: Sample {} not found in {}".format(sample, cond_2_basename))
-    with open('R2_values.csv', 'w') as f:
-        print ("Saving R2 values to R2_values.csv")
-        for x in R_dict.keys():
-            if R_dict[x] is 'nan':
-                continue
-            else:
-                try:
-                    f.write("{}\t{}\n".format(x,R_dict[x]))
-                except IOError:
-                    continue 
+   # with open('R2_values.csv', 'w') as f:
+   #     print ("Saving R2 values to R2_values.csv")
+   #     for x in R_dict.keys():
+   #         if R_dict[x] is 'nan':
+   #             continue
+   #         else:
+   #             try:
+   #                 f.write("{}\t{}\n".format(x,R_dict[x]))
+   #             except IOError:
+   #                 continue 
+    
+    make_heatmap(R_dict)
 
 def load_fpkm_counts (file):
     """
@@ -149,6 +151,7 @@ def load_summary_fpkm_counts (file):
     
     # Read the counts file
     try:
+
         with open(file, 'r') as fh:
             header = fh.readline()
             sample_names = header.split("\t")[2:]
@@ -164,8 +167,6 @@ def load_summary_fpkm_counts (file):
         return None
             
     return counts
-
-
 
 
 
@@ -243,12 +244,109 @@ def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear
     # Return the filenames and R2
     return {'png': png_fn, 'pdf': pdf_fn, output_fn:r_squared }
 
+
+
+
 def make_heatmap(r_values):
     """
-    Takes a dict of r2 values and generates a heatmap
+    Takes a dict of r2 values and generates a heatmap using matplotlib
     """
     
+    data=r_values
+    #list the sample names
+    names=data.keys()
+    names=set()
+    for i in data.keys():
+        names.update(i.split('-'))
+    names=sorted(list(names))
+    names=sorted(names)
     
+    #If the smple looks like it's form a NGI project, do specific cleaning
+    ngi = re.compile(r'^P\d+_\d+')
+    clean_names=[]
+    for i in names:
+        i=i.split(".")[0]   #Remove everything after the first dot
+        j=re.search(ngi, i)
+        if j:
+            if i.endswith('Aligned'):
+                  i = i[:-7]
+        clean_names.append(i)
+    
+    matrix = []
+    #Generate the data matrix (list of lists) 
+    for idx, x in enumerate(names):
+        matrix.append([])
+        for idy, y in enumerate(names):
+        	v = 0
+        	try:
+        		v = data["{}-{}".format(x,y)]
+        	except KeyError:
+        		try:
+        			v = data["{}-{}".format(y,x)]
+        		except KeyError:
+        			if x == y:
+        				v = 1
+        	matrix[idx].append(v)
+
+    ### Turn data into numpy aray:
+    data = np.array(matrix)
+   
+    print (data)
+    fig, ax = plt.subplots()
+    #set size
+    heatmap = ax.pcolor(data, cmap='YlOrRd', vmin=0, vmax=1)
+    #heatmap = ax.pcolor(data, cmap=plt.cm.Blues, alpha=0.8)
+    fig = plt.gcf()
+    #fig.set_size_inches(8, 11)
+
+    #margins( x=1, y=1)
+
+    #fig.set_size_inches(18.5, 10.5)
+    #DefaultSize = fig.get_size_inches()
+    #fig.set_size_inches( (DefaultSize[0]*2, DefaultSize[1]*2) )
+
+    ax.set_frame_on(False)
+    #make the plot square
+    plt.axis('equal') 
+
+    # put the major ticks at the middle of each cell
+    ax.set_yticks(np.arange(data.shape[0]) +0.5 , minor=False)
+    ax.set_xticks(np.arange(data.shape[1]) +0.5 , minor=False)
+    
+    # want a more natural, table-like display
+    ax.invert_yaxis()
+    ax.xaxis.tick_top()
+
+    ax.get_yaxis().set_tick_params(direction='in')
+    
+    #adjust plot position
+    plt.subplots_adjust(bottom=None, right=None, left=0.3, top = 0.7)
+    #plt.tight_layout()
+    # Set the labels
+    labels = clean_names
+    ax.set_xticklabels(labels, minor=False)
+    ax.set_yticklabels(labels, minor=False)
+    
+    # rotate the plot
+    plt.xticks(rotation=90)
+
+    
+    ax.grid(False)
+    # Turn off all the ticks
+    ax = plt.gca()
+    
+    #remove small ticks
+   # for t in ax.xaxis.get_major_ticks():
+   #     t.tick1On = False
+   #     t.tick2On = False
+   # for t in ax.yaxis.get_major_ticks():
+   #     t.tick1On = False
+   #     t.tick2On = False
+    
+    savefig('heatmap.png')
+    return None  
+    
+
 if __name__ == "__main__":
     # Command line arguments
     parser = argparse.ArgumentParser("Make a scatter plot of FPKM counts between conditions")
