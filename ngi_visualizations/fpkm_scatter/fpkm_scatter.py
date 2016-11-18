@@ -24,7 +24,6 @@ from collections import defaultdict
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from pylab import *
 
 def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts', linear=False):
     """
@@ -87,7 +86,6 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
                     continue
    
    #Save R2 values in a matrix to file
-   print (R_dict)
     if summary is False:
         keys=R_dict.keys()
         keys=set()
@@ -305,7 +303,6 @@ def make_heatmap(r_values):
     ### Turn data into numpy aray:
     data = np.array(matrix)
    
-    print (data)
     fig, ax = plt.subplots()
     #set size
     heatmap = ax.pcolor(data, cmap='YlOrRd', vmin=0, vmax=1)
@@ -345,9 +342,8 @@ def make_heatmap(r_values):
     for t in ax.yaxis.get_major_ticks():
         t.tick1On = False
         t.tick2On = False
-    
-    print(
-    savefig('heatmap.png')
+    print("Saving heatmap to heatmap.png")
+    plt.savefig('heatmap.png')
     return None  
     
 
