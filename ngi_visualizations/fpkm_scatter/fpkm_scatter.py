@@ -57,6 +57,14 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
    
     # We have a summary file
     else:
+       if len(input_files) !=2:
+            logging.critical("'--summary' currently only works for two files")
+            sys.exit()
+       
+       input_1 = os.path.realpath(input_files[0])
+       input_2 = os.path.realpath(input_files[1])
+   
+
        # Parse the input files
        # returns counts[sample_name][gene_id] = fpkm_count
        condition_1 = load_summary_fpkm_counts(input_1)
@@ -77,38 +85,38 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
                cond_2_sample = cond_1_sample.replace(cond_1_proj, cond_2_proj)
                condition_2[cond_2_sample]
                outfile = "{}_{}-{}_{}".format(cond_1_basename, cond_1_sample, cond_2_basename, cond_2_sample)
-               
                plot_filenames = plot_fpkm_scatter(condition_1[cond_1_sample], condition_2[cond_2_sample], cond_1_sample, cond_2_sample, output_fn=outfile, linear=linear)
+               #Add to R_dict
+               fn_key = "{}-{}".format(cond_1_sample,cond_2_sample )
+               R_dict[fn_key]= plot_filenames[outfile]
            except KeyError:
-               logging.warning("Warning: Sample {} not found in {}".format(sample, cond_2_basename))
+               logging.warning("Warning: Sample {} not found in {}".format(cond_2_sample, cond_2_basename))
                continue
    
     #Save R2 values in a matrix to file
-    if summary is False:
-        #Extract the sample name, I.e unique keys 'a & b' instead of 'a-b' 
-        keys=set()
-        for i in R_dict.keys():
-            keys.update(i.split('-'))
-        keys=sorted(list(keys))
-        with open('R2_values.csv', 'w') as f:
-            f.write("\t{}\n".format("\t".join(keys)))
-            # r for rows and c for columns in the matrix
-            for r in keys:
-                f.write(r)
-                for c in keys:
-                    #a=a is not a part of the dict (since always R2=1, need to add it to the file to get the rows/columns to match
-                    if c==r:
-                        f.write("\t1")
+    #Extract the sample name, I.e unique keys 'a & b' instead of 'a-b' 
+    keys=set()
+    for i in R_dict.keys():
+        keys.update(i.split('-'))
+    keys=sorted(list(keys))
+    with open('R2_values.csv', 'w') as f:
+        f.write("\t{}\n".format("\t".join(keys)))
+        # r for rows and c for columns in the matrix
+        for r in keys:
+            f.write(r)
+            for c in keys:
+                #a=a is not a part of the dict (since always R2=1, need to add it to the file to get the rows/columns to match
+                if c==r:
+                    f.write("\t1")
+                try:
+                    f.write("\t{}".format(R_dict['{}-{}'.format(r,c)]))
+                except KeyError:
                     try:
-                        f.write("\t{}".format(R_dict['{}-{}'.format(r,c)]))
+                        f.write("\t{}".format(R_dict['{}-{}'.format(c,r)]))
                     except KeyError:
-                        try:
-                            f.write("\t{}".format(R_dict['{}-{}'.format(c,r)]))
-                        except KeyError:
-                            f.write("\t")
-                            
-                f.write("\n")
-
+                        f.write("\t")
+                        
+            f.write("\n")
 
     #Call the heatmap function
     make_heatmap(R_dict)
