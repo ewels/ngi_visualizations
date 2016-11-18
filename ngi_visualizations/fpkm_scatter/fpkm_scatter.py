@@ -84,40 +84,35 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
                     plot_filenames = plot_fpkm_scatter(condition_1[cond_1_sample], condition_2[cond_2_sample], cond_1_sample, cond_2_sample, output_fn=outfile, linear=linear)
                 except KeyError:
                     logging.warning("Warning: Sample {} not found in {}".format(sample, cond_2_basename))
-   # with open('R2_values.csv', 'w') as f:
-   #     print ("Saving R2 values to R2_values.csv")
-   #     for x in R_dict.keys():
-   #         if R_dict[x] is 'nan':
-   #             continue
-   #         else:
-   #             try:
-   #                 f.write("{}\t{}\n".format(x,R_dict[x]))
-   #             except IOError:
-   #                 continue 
+                    continue
+   
+   #Save R2 values in a matrix to file
+   print (R_dict)
     if summary is False:
         keys=R_dict.keys()
         keys=set()
         for i in R_dict.keys():
             keys.update(i.split('-'))
         keys=sorted(list(keys))
-
         with open('R2_values.csv', 'w') as f:
             f.write("\t{}\n".format("\t".join(keys)))
             for r in keys:
                 f.write(r)
                 for c in keys:
+                    if c==r:
+                        f.write("\t1")
                     try:
-                        f.write("\t{}".format(R_dict[r][c]))
+                        f.write("\t{}".format(R_dict['{}-{}'.format(r,c)]))
                     except KeyError:
                         try:
-                            f.write("\t{}".format(R_dict[c][r]))
+                            f.write("\t{}".format(R_dict['{}-{}'.format(c,r)]))
                         except KeyError:
                             f.write("\t")
                             
                 f.write("\n")
 
 
-
+    #Call the heatmap function
     make_heatmap(R_dict)
 
 def load_fpkm_counts (file):
@@ -146,7 +141,7 @@ def load_fpkm_counts (file):
                     FPKM = cols[FPKM_idx]
                     counts[gene_id] = FPKM
             except IndexError:
-                print ("""One of the input files is not of valid format, are you sure that it's a FPKM file?
+                logging.warn("""One of the input files is not of valid format, are you sure that it's a FPKM file?
     exiting""")
                 sys.exit()
 
@@ -279,9 +274,8 @@ def make_heatmap(r_values):
     for i in data.keys():
         names.update(i.split('-'))
     names=sorted(list(names))
-    names=sorted(names)
     
-    #If the smple looks like it's form a NGI project, do specific cleaning
+    #If the sample looks like it's form a NGI project, do specific cleaning
     ngi = re.compile(r'^P\d+_\d+')
     clean_names=[]
     for i in names:
@@ -317,7 +311,6 @@ def make_heatmap(r_values):
     heatmap = ax.pcolor(data, cmap='YlOrRd', vmin=0, vmax=1)
     #heatmap = ax.pcolor(data, cmap=plt.cm.Blues, alpha=0.8)
     fig = plt.gcf()
-    #fig.set_size_inches(8, 11)
 
     ax.set_frame_on(False)
     #make the plot square
@@ -353,6 +346,7 @@ def make_heatmap(r_values):
         t.tick1On = False
         t.tick2On = False
     
+    print(
     savefig('heatmap.png')
     return None  
     
