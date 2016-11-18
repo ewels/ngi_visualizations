@@ -6,7 +6,7 @@ Takes FPKM counts from two conditions and makes a scatter plot.
 Also calculates a r-squared correlation score.
 
 Either takes two Cufflinks FPKM summary files or a summary file
-wmith multiple samples.
+with multiple samples.
 """
 
 from __future__ import print_function
@@ -16,7 +16,6 @@ import logging
 import numpy as np
 import os
 import re
-import itertools
 import sys
 import re
 from collections import defaultdict
@@ -31,12 +30,13 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
     """
     R_dict={}
     #iterate over all uniqe pairs of input files
-    for f,y in itertools.combinations(input_files,2):
-        # Get proper paths for input files
-        input_1 = os.path.realpath(f)
-        input_2 = os.path.realpath(y)
-        
-        # First off, assume that we have two FPKM files from cufflinks
+    for x in range(len(input_files)):
+        for y in range(x+1, len(input_files)):
+            # Get proper paths for input files
+            input_1 = os.path.realpath(input_files[x])
+            input_2 = os.path.realpath(input_files[y])
+   
+        # First off, assume that we have two FPKM 
         if summary is False:
            
             # Parse the input files
@@ -46,11 +46,6 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
             # What are the sample names?
             sample_1_name = os.path.splitext(os.path.basename(input_1))[0]
             sample_2_name = os.path.splitext(os.path.basename(input_2))[0]
-            #print(sample_1_name)
-            #print(sample_2_name)
-            # File name
-            if output_fn is None:
-                output_fn=False
             # Make the plot
             plot_filenames = plot_fpkm_scatter(sample_1, sample_2, sample_1_name, sample_2_name, output_fn=output_fn, linear=linear)
             #Extract the R-value
@@ -87,16 +82,18 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
    
    #Save R2 values in a matrix to file
     if summary is False:
-        keys=R_dict.keys()
+        #Extract the sample name, I.e unique keys 'a & b' instead of 'a-b' 
         keys=set()
         for i in R_dict.keys():
             keys.update(i.split('-'))
         keys=sorted(list(keys))
         with open('R2_values.csv', 'w') as f:
             f.write("\t{}\n".format("\t".join(keys)))
+            # r for rows and c for columns in the matrix
             for r in keys:
                 f.write(r)
                 for c in keys:
+                    #a=a is not a part of the dict (since always R2=1, need to add it to the file to get the rows/columns to match
                     if c==r:
                         f.write("\t1")
                     try:
@@ -139,8 +136,7 @@ def load_fpkm_counts (file):
                     FPKM = cols[FPKM_idx]
                     counts[gene_id] = FPKM
             except IndexError:
-                logging.warn("""One of the input files is not of valid format, are you sure that it's a FPKM file?
-    exiting""")
+                logging.critical ("One of the input files is not in a valid format, are you sure that it's a FPKM file?\nExiting")
                 sys.exit()
 
     except IOError as e:
@@ -196,7 +192,7 @@ def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear
     each sample.
     """
     # Output filename
-    if output_fn is False:
+    if output_fn is None:
         output_fn = "{}-{}".format(x_lab, y_lab)
     # SET UP PLOT
     fig = plt.figure()
@@ -260,14 +256,12 @@ def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear
     return {'png': png_fn, 'pdf': pdf_fn, output_fn:r_squared }
 
 
-def make_heatmap(r_values):
+def make_heatmap(data):
     """
     Takes a dict of r2 values and generates a heatmap using matplotlib
     """
     
-    data=r_values
     #list the sample names
-    names=data.keys()
     names=set()
     for i in data.keys():
         names.update(i.split('-'))
@@ -304,14 +298,15 @@ def make_heatmap(r_values):
     data = np.array(matrix)
    
     fig, ax = plt.subplots()
+    
     #set size
     heatmap = ax.pcolor(data, cmap='YlOrRd', vmin=0, vmax=1)
-    #heatmap = ax.pcolor(data, cmap=plt.cm.Blues, alpha=0.8)
     fig = plt.gcf()
-
     ax.set_frame_on(False)
+    
     #make the plot square
     plt.gca().set_aspect('equal', adjustable='box')
+    
     # put the major ticks at the middle of each cell
     ax.set_yticks(np.arange(data.shape[0]) +0.5 , minor=False)
     ax.set_xticks(np.arange(data.shape[1]) +0.5 , minor=False)
@@ -322,7 +317,7 @@ def make_heatmap(r_values):
     
     #adjust plot position to make room for longer sample names:
     plt.subplots_adjust(bottom=None, right=None, left=0.3, top = 0.7)
-    #plt.tight_layout()
+    
     # Set the labels
     labels = clean_names
     ax.set_xticklabels(labels, minor=False)
@@ -342,7 +337,7 @@ def make_heatmap(r_values):
     for t in ax.yaxis.get_major_ticks():
         t.tick1On = False
         t.tick2On = False
-    print("Saving heatmap to heatmap.png")
+    logging.log("Saving heatmap to heatmap.png")
     plt.savefig('heatmap.png')
     return None  
     
