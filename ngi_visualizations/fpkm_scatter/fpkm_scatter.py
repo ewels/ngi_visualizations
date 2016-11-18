@@ -29,58 +29,61 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
     Main function. Takes input files and makes a plot.
     """
     R_dict={}
-    #iterate over all uniqe pairs of input files
-    for x in range(len(input_files)):
-        for y in range(x+1, len(input_files)):
-            # Get proper paths for input files
-            input_1 = os.path.realpath(input_files[x])
-            input_2 = os.path.realpath(input_files[y])
+    
+    # First off, assume that we have two FPKM 
+    if summary is False:
+    
+        #iterate over all uniqe pairs of input files
+        for x in range(len(input_files)):
+            for y in range(x+1, len(input_files)):
+                # Get proper paths for input files
+                input_1 = os.path.realpath(input_files[x])
+                input_2 = os.path.realpath(input_files[y])
    
-        # First off, assume that we have two FPKM 
-        if summary is False:
            
-            # Parse the input files
-            sample_1 = load_fpkm_counts(input_1)
-            sample_2 = load_fpkm_counts(input_2)
+                # Parse the input files
+                sample_1 = load_fpkm_counts(input_1)
+                sample_2 = load_fpkm_counts(input_2)
             
-            # What are the sample names?
-            sample_1_name = os.path.splitext(os.path.basename(input_1))[0]
-            sample_2_name = os.path.splitext(os.path.basename(input_2))[0]
-            # Make the plot
-            plot_filenames = plot_fpkm_scatter(sample_1, sample_2, sample_1_name, sample_2_name, output_fn=output_fn, linear=linear)
-            #Extract the R-value
-            #Get the key from the sample names 
-            fn_key = "{}-{}".format(sample_1_name, sample_2_name) 
-            R_dict[fn_key]= plot_filenames[fn_key]
-        # We have a summary file
-        else:
-            # Parse the input files
-            # returns counts[sample_name][gene_id] = fpkm_count
-            condition_1 = load_summary_fpkm_counts(input_1)
-            condition_2 = load_summary_fpkm_counts(input_2)
-            
-            # Condition basenames
-            cond_1_basename = os.path.splitext(os.path.basename(input_1))[0]
-            cond_2_basename = os.path.splitext(os.path.basename(input_2))[0]
-            
-            # Find project names from sample ID (P1234_*)
-            pname_re = re.compile('^P\d+_')
-            cond_1_proj = pname_re.search(condition_1.keys()[0]).group(0)
-            cond_2_proj = pname_re.search(condition_2.keys()[0]).group(0)
-            
-            # Go through each sample pair
-            for cond_1_sample in condition_1.keys():
-                try:
-                    cond_2_sample = cond_1_sample.replace(cond_1_proj, cond_2_proj)
-                    condition_2[cond_2_sample]
-                    outfile = "{}_{}-{}_{}".format(cond_1_basename, cond_1_sample, cond_2_basename, cond_2_sample)
-                    
-                    plot_filenames = plot_fpkm_scatter(condition_1[cond_1_sample], condition_2[cond_2_sample], cond_1_sample, cond_2_sample, output_fn=outfile, linear=linear)
-                except KeyError:
-                    logging.warning("Warning: Sample {} not found in {}".format(sample, cond_2_basename))
-                    continue
+                # What are the sample names?
+                sample_1_name = os.path.splitext(os.path.basename(input_1))[0]
+                sample_2_name = os.path.splitext(os.path.basename(input_2))[0]
+                # Make the plot
+                plot_filenames = plot_fpkm_scatter(sample_1, sample_2, sample_1_name, sample_2_name, output_fn=output_fn, linear=linear)
+                #Extract the R-value
+                #Get the key from the sample names 
+                fn_key = "{}-{}".format(sample_1_name, sample_2_name) 
+                R_dict[fn_key]= plot_filenames[fn_key]
    
-   #Save R2 values in a matrix to file
+    # We have a summary file
+    else:
+       # Parse the input files
+       # returns counts[sample_name][gene_id] = fpkm_count
+       condition_1 = load_summary_fpkm_counts(input_1)
+       condition_2 = load_summary_fpkm_counts(input_2)
+       
+       # Condition basenames
+       cond_1_basename = os.path.splitext(os.path.basename(input_1))[0]
+       cond_2_basename = os.path.splitext(os.path.basename(input_2))[0]
+       
+       # Find project names from sample ID (P1234_*)
+       pname_re = re.compile('^P\d+_')
+       cond_1_proj = pname_re.search(condition_1.keys()[0]).group(0)
+       cond_2_proj = pname_re.search(condition_2.keys()[0]).group(0)
+       
+       # Go through each sample pair
+       for cond_1_sample in condition_1.keys():
+           try:
+               cond_2_sample = cond_1_sample.replace(cond_1_proj, cond_2_proj)
+               condition_2[cond_2_sample]
+               outfile = "{}_{}-{}_{}".format(cond_1_basename, cond_1_sample, cond_2_basename, cond_2_sample)
+               
+               plot_filenames = plot_fpkm_scatter(condition_1[cond_1_sample], condition_2[cond_2_sample], cond_1_sample, cond_2_sample, output_fn=outfile, linear=linear)
+           except KeyError:
+               logging.warning("Warning: Sample {} not found in {}".format(sample, cond_2_basename))
+               continue
+   
+    #Save R2 values in a matrix to file
     if summary is False:
         #Extract the sample name, I.e unique keys 'a & b' instead of 'a-b' 
         keys=set()
@@ -337,7 +340,7 @@ def make_heatmap(data):
     for t in ax.yaxis.get_major_ticks():
         t.tick1On = False
         t.tick2On = False
-    logging.log("Saving heatmap to heatmap.png")
+    logging.info("Saving heatmap to heatmap.png")
     plt.savefig('heatmap.png')
     return None  
     
