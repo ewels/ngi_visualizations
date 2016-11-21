@@ -324,11 +324,13 @@ def make_heatmap(data):
     
     # want a more natural, table-like display
     ax.invert_yaxis()
-    ax.xaxis.tick_top()
+    #ax.xaxis.tick_top()
     
     #adjust plot position to make room for longer sample names:
-    plt.subplots_adjust(bottom=None, right=None, left=0.3, top = 0.7)
+    plt.subplots_adjust(bottom=0.4, right=None, left=0.3, top = None)
     
+    plt.colorbar(heatmap, ax=ax) 
+
     # Set the labels
     labels = clean_names
     ax.set_xticklabels(labels, minor=False)
@@ -340,7 +342,8 @@ def make_heatmap(data):
     ax.grid(False)
     # Turn off all the ticks
     ax = plt.gca()
-    
+   
+    plt.title("Heatmap of R2 values")
     #remove small ticks
     for t in ax.xaxis.get_major_ticks():
         t.tick1On = False
