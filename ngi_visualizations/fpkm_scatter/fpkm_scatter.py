@@ -119,7 +119,8 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
             f.write("\n")
 
     #Call the heatmap function
-    make_heatmap(R_dict)
+   if len(R_dict.keys()) > 2:
+       make_heatmap(R_dict)
 
 def load_fpkm_counts (file):
     """
