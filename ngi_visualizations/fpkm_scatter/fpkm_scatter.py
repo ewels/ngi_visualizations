@@ -292,16 +292,16 @@ def make_heatmap(data):
     for idx, x in enumerate(names):
         matrix.append([])
         for idy, y in enumerate(names):
-        	v = 0
-        	try:
-        		v = data["{}-{}".format(x,y)]
-        	except KeyError:
-        		try:
-        			v = data["{}-{}".format(y,x)]
-        		except KeyError:
-        			if x == y:
-        				v = 1
-        	matrix[idx].append(v)
+            v = 0
+            try:
+                v = data["{}-{}".format(x,y)]
+            except KeyError:
+                try:
+                    v = data["{}-{}".format(y,x)]
+                except KeyError:
+                    if x == y:
+                        v = 1
+            matrix[idx].append(v)
 
     ### Turn data into numpy aray:
     data = np.array(matrix)
