@@ -115,7 +115,7 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
                         f.write("\t{}".format(R_dict['{}-{}'.format(c,r)]))
                     except KeyError:
                         f.write("\t")
-                        
+                        logging.warning("Warning: Couldn't write data for the combination {} and {}".format(c,r)) 
             f.write("\n")
 
     #Call the heatmap function
@@ -280,14 +280,11 @@ def make_heatmap(data):
     names=sorted(list(names))
     
     #If the sample looks like it's form a NGI project, do specific cleaning
-    ngi = re.compile(r'^P\d+_\d+')
     clean_names=[]
     for i in names:
         i=i.split(".")[0]   #Remove everything after the first dot
-        j=re.search(ngi, i)
-        if j:
-            if i.endswith('Aligned'):
-                  i = i[:-7]
+        if i.endswith('Aligned'):
+            i = i[:-7]
         clean_names.append(i)
     
     matrix = []
