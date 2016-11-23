@@ -114,11 +114,12 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
                         f.write("\t{}".format(R_dict['{}-{}'.format(c,r)]))
                     except KeyError:
                         f.write("\t")
-                        
+                        logging.warning("Warning: Couldn't write data for the combination {} and {}".format(c,r)) 
             f.write("\n")
 
     #Call the heatmap function
-    make_heatmap(R_dict,heatmap_fn)
+   if len(R_dict.keys()) > 2:
+       make_heatmap(R_dict,heatmap_fn)
 
 def load_fpkm_counts (file):
     """
@@ -277,14 +278,11 @@ def make_heatmap(data, heatmap_fn):
     names=sorted(list(names))
     
     #If the sample looks like it's form a NGI project, do specific cleaning
-    ngi = re.compile(r'^P\d+_\d+')
     clean_names=[]
     for i in names:
         i=i.split(".")[0]   #Remove everything after the first dot
-        j=re.search(ngi, i)
-        if j:
-            if i.endswith('Aligned'):
-                  i = i[:-7]
+        if i.endswith('Aligned'):
+            i = i[:-7]
         clean_names.append(i)
     
     matrix = []
@@ -292,16 +290,16 @@ def make_heatmap(data, heatmap_fn):
     for idx, x in enumerate(names):
         matrix.append([])
         for idy, y in enumerate(names):
-        	v = 0
-        	try:
-        		v = data["{}-{}".format(x,y)]
-        	except KeyError:
-        		try:
-        			v = data["{}-{}".format(y,x)]
-        		except KeyError:
-        			if x == y:
-        				v = 1
-        	matrix[idx].append(v)
+            v = 0
+            try:
+                v = data["{}-{}".format(x,y)]
+            except KeyError:
+                try:
+                    v = data["{}-{}".format(y,x)]
+                except KeyError:
+                    if x == y:
+                        v = 1
+            matrix[idx].append(v)
 
     ### Turn data into numpy aray:
     data = np.array(matrix)
