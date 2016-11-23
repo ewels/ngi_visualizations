@@ -24,7 +24,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts', linear=False):
+def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts', linear=False, heatmap_fn=heatmap_fn):
     """
     Main function. Takes input files and makes a plot.
     """
@@ -64,7 +64,6 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
        input_1 = os.path.realpath(input_files[0])
        input_2 = os.path.realpath(input_files[1])
    
-
        # Parse the input files
        # returns counts[sample_name][gene_id] = fpkm_count
        condition_1 = load_summary_fpkm_counts(input_1)
@@ -119,7 +118,7 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
             f.write("\n")
 
     #Call the heatmap function
-    make_heatmap(R_dict)
+    make_heatmap(R_dict,heatmap_fn)
 
 def load_fpkm_counts (file):
     """
@@ -189,7 +188,6 @@ def load_summary_fpkm_counts (file):
         return None
             
     return counts
-
 
 
 
@@ -267,7 +265,7 @@ def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear
     return {'png': png_fn, 'pdf': pdf_fn, output_fn:r_squared }
 
 
-def make_heatmap(data):
+def make_heatmap(data, heatmap_fn):
     """
     Takes a dict of r2 values and generates a heatmap using matplotlib
     """
@@ -317,14 +315,13 @@ def make_heatmap(data):
     
     #make the plot square
     plt.gca().set_aspect('equal', adjustable='box')
-    
+
     # put the major ticks at the middle of each cell
     ax.set_yticks(np.arange(data.shape[0]) +0.5 , minor=False)
     ax.set_xticks(np.arange(data.shape[1]) +0.5 , minor=False)
     
     # want a more natural, table-like display
     ax.invert_yaxis()
-    #ax.xaxis.tick_top()
     
     #adjust plot position to make room for longer sample names:
     plt.subplots_adjust(bottom=0.4, right=None, left=0.3, top = None)
@@ -351,8 +348,11 @@ def make_heatmap(data):
     for t in ax.yaxis.get_major_ticks():
         t.tick1On = False
         t.tick2On = False
-    logging.info("Saving heatmap to heatmap.png")
-    plt.savefig('heatmap.png')
+    logging.info("Saving heatmap to {}.png and {}.pdf".format(heatmap_fn))
+    pdf_fn = "{}.pdf".format(heatmap_fn)
+    png_fn = "{}.png".format(heatmap_fn)
+    plt.savefig(pdf_fn)
+    plt.savefig(png_fn)
     return None  
     
 
@@ -371,6 +371,8 @@ if __name__ == "__main__":
                         help="Log output filename. Default: stdout")
     parser.add_argument("input_files", metavar='<input files>', nargs='+',
                         help="List of summary FPKM / cufflinks FPKM results files. See README.MD for more information.")
+    parser.add_argument("-f", "--heatmap", dest="heatmap_fn", default='heatmap',
+                        help="Name of heatmap output")
     kwargs = vars(parser.parse_args())
     
     # Initialise logger

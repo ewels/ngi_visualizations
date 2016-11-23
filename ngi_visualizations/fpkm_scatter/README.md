@@ -41,6 +41,7 @@ Command Line Flag | `plot_complexity_curves()` argument name | Description
 `-s`, `--summary` | `summary` Default: False<br>Input files are summary FPKMs (see above)
 `-o`, `--output-name` | `output_fn` | Default: `<sample1>_<sample2>`.<br>Output file name
 `-l`, `--linear` | `linear` | Default: `False`.<br>Specify flag to use linear axes instead of log10
+`-f`, `--heatmap` | `heatmap_fn` | Default: `heatmap`.<br>Heatmap file name
 `-h`, `--help` | - | Display full help text.
 
 ## Dependencies
