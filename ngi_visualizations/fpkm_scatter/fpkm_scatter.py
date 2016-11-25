@@ -305,6 +305,12 @@ def make_heatmap(data, heatmap_fn):
     data = np.array(matrix)
    
     fig, ax = plt.subplots()
+
+
+    ## Dynamically change font size
+    if len(clean_names) > 10:
+        ax.xaxis.label.set_fontsize(8)
+        ax.yaxis.label .set_fontsize(8)
     
     #set size
     heatmap = ax.pcolor(data, cmap='YlOrRd', vmin=0, vmax=1)
@@ -321,7 +327,8 @@ def make_heatmap(data, heatmap_fn):
     # want a more natural, table-like display
     ax.invert_yaxis()
     
-    #adjust plot position to make room for longer sample names:
+    #adjust plot position to make room for longer sample names. 
+    #This does creat a bit of whitespace
     plt.subplots_adjust(bottom=0.4, right=None, left=0.3, top = None)
     
     plt.colorbar(heatmap, ax=ax) 
