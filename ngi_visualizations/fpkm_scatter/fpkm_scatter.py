@@ -24,7 +24,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts', linear=False, heatmap_fn=heatmap_fn):
+def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts', linear=False, heatmap_fn='heatmap_fn'):
     """
     Main function. Takes input files and makes a plot.
     """
@@ -107,6 +107,7 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
                 #a=a is not a part of the dict (since always R2=1, need to add it to the file to get the rows/columns to match
                 if c==r:
                     f.write("\t1")
+                    continue
                 try:
                     f.write("\t{}".format(R_dict['{}-{}'.format(r,c)]))
                 except KeyError:
@@ -118,8 +119,8 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
             f.write("\n")
 
     #Call the heatmap function
-   if len(R_dict.keys()) > 2:
-       make_heatmap(R_dict,heatmap_fn)
+    if len(R_dict.keys()) > 2:
+        make_heatmap(R_dict,heatmap_fn)
 
 def load_fpkm_counts (file):
     """
@@ -308,10 +309,14 @@ def make_heatmap(data, heatmap_fn):
 
 
     ## Dynamically change font size
-    if len(clean_names) > 10:
+    if len(clean_names) >= 20 :
+        ax.xaxis.label.set_fontsize(4)
+        ax.yaxis.label .set_fontsize(4)
+    elif len(clean_names) >= 10:
         ax.xaxis.label.set_fontsize(8)
         ax.yaxis.label .set_fontsize(8)
     
+
     #set size
     heatmap = ax.pcolor(data, cmap='YlOrRd', vmin=0, vmax=1)
     fig = plt.gcf()
@@ -353,7 +358,7 @@ def make_heatmap(data, heatmap_fn):
     for t in ax.yaxis.get_major_ticks():
         t.tick1On = False
         t.tick2On = False
-    logging.info("Saving heatmap to {}.png and {}.pdf".format(heatmap_fn))
+    logging.info("Saving heatmap to {}.png and {}.pdf".format(heatmap_fn,heatmap_fn))
     pdf_fn = "{}.pdf".format(heatmap_fn)
     png_fn = "{}.png".format(heatmap_fn)
     plt.savefig(pdf_fn)
