@@ -16,67 +16,112 @@ import logging
 import numpy as np
 import os
 import re
-
+import sys
+import re
+from collections import defaultdict
 # Import matplot lib but avoid default X environment
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts', linear=False):
+def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts', linear=False, heatmap_fn='heatmap_fn'):
     """
     Main function. Takes input files and makes a plot.
     """
+    R_dict={}
     
-    # Get proper paths for input files
-    input_1 = os.path.realpath(input_files[0])
-    input_2 = os.path.realpath(input_files[1])
-    
-    # First off, assume that we have two FPKM files from cufflinks
+    # First off, assume that we have two FPKM 
     if summary is False:
-       
-        # Parse the input files
-        sample_1 = load_fpkm_counts(input_1)
-        sample_2 = load_fpkm_counts(input_2)
-        
-        # What are the sample names?
-        sample_1_name = os.path.splitext(os.path.basename(input_1))[0]
-        sample_2_name = os.path.splitext(os.path.basename(input_2))[0]
-        
-        # File name
-        if output_fn is None:
-            output_fn = "{}-{}".format(sample_1_name, sample_2_name)
-
-        # Make the plot
-        plot_filenames = plot_fpkm_scatter(sample_1, sample_2, sample_1_name, sample_2_name, output_fn=output_fn, linear=linear)
     
+        #iterate over all uniqe pairs of input files
+        for x in range(len(input_files)):
+            for y in range(x+1, len(input_files)):
+                # Get proper paths for input files
+                input_1 = os.path.realpath(input_files[x])
+                input_2 = os.path.realpath(input_files[y])
+   
+           
+                # Parse the input files
+                sample_1 = load_fpkm_counts(input_1)
+                sample_2 = load_fpkm_counts(input_2)
+            
+                # What are the sample names?
+                sample_1_name = os.path.splitext(os.path.basename(input_1))[0]
+                sample_2_name = os.path.splitext(os.path.basename(input_2))[0]
+                # Make the plot
+                plot_filenames = plot_fpkm_scatter(sample_1, sample_2, sample_1_name, sample_2_name, output_fn=output_fn, linear=linear)
+                #Extract the R-value
+                #Get the key from the sample names 
+                fn_key = "{}-{}".format(sample_1_name, sample_2_name) 
+                R_dict[fn_key]= plot_filenames[fn_key]
+   
     # We have a summary file
     else:
-        # Parse the input files
-        # returns counts[sample_name][gene_id] = fpkm_count
-        condition_1 = load_summary_fpkm_counts(input_1)
-        condition_2 = load_summary_fpkm_counts(input_2)
-        
-        # Condition basenames
-        cond_1_basename = os.path.splitext(os.path.basename(input_1))[0]
-        cond_2_basename = os.path.splitext(os.path.basename(input_2))[0]
-        
-        # Find project names from sample ID (P1234_*)
-        pname_re = re.compile('^P\d+_')
-        cond_1_proj = pname_re.search(condition_1.keys()[0]).group(0)
-        cond_2_proj = pname_re.search(condition_2.keys()[0]).group(0)
-        
-        # Go through each sample pair
-        for cond_1_sample in condition_1.keys():
-            try:
-                cond_2_sample = cond_1_sample.replace(cond_1_proj, cond_2_proj)
-                condition_2[cond_2_sample]
-                outfile = "{}_{}-{}_{}".format(cond_1_basename, cond_1_sample, cond_2_basename, cond_2_sample)
-                
-                plot_filenames = plot_fpkm_scatter(condition_1[cond_1_sample], condition_2[cond_2_sample], cond_1_sample, cond_2_sample, output_fn=outfile, linear=linear)
-            except KeyError:
-                logging.warning("Warning: Sample {} not found in {}".format(sample, cond_2_basename))
-    
-    
+       if len(input_files) !=2:
+            logging.critical("'--summary' currently only works for two files")
+            sys.exit()
+       
+       input_1 = os.path.realpath(input_files[0])
+       input_2 = os.path.realpath(input_files[1])
+   
+       # Parse the input files
+       # returns counts[sample_name][gene_id] = fpkm_count
+       condition_1 = load_summary_fpkm_counts(input_1)
+       condition_2 = load_summary_fpkm_counts(input_2)
+       
+       # Condition basenames
+       cond_1_basename = os.path.splitext(os.path.basename(input_1))[0]
+       cond_2_basename = os.path.splitext(os.path.basename(input_2))[0]
+       
+       # Find project names from sample ID (P1234_*)
+       pname_re = re.compile('^P\d+_')
+       cond_1_proj = pname_re.search(condition_1.keys()[0]).group(0)
+       cond_2_proj = pname_re.search(condition_2.keys()[0]).group(0)
+       
+       # Go through each sample pair
+       for cond_1_sample in condition_1.keys():
+           try:
+               cond_2_sample = cond_1_sample.replace(cond_1_proj, cond_2_proj)
+               condition_2[cond_2_sample]
+               outfile = "{}_{}-{}_{}".format(cond_1_basename, cond_1_sample, cond_2_basename, cond_2_sample)
+               plot_filenames = plot_fpkm_scatter(condition_1[cond_1_sample], condition_2[cond_2_sample], cond_1_sample, cond_2_sample, output_fn=outfile, linear=linear)
+               #Add to R_dict
+               fn_key = "{}-{}".format(cond_1_sample,cond_2_sample )
+               R_dict[fn_key]= plot_filenames[outfile]
+           except KeyError:
+               logging.warning("Warning: Sample {} not found in {}".format(cond_2_sample, cond_2_basename))
+               continue
+   
+    #Save R2 values in a matrix to file
+    #Extract the sample name, I.e unique keys 'a & b' instead of 'a-b' 
+    keys=set()
+    for i in R_dict.keys():
+        keys.update(i.split('-'))
+    keys=sorted(list(keys))
+    with open('R2_values.csv', 'w') as f:
+        f.write("\t{}\n".format("\t".join(keys)))
+        # r for rows and c for columns in the matrix
+        for r in keys:
+            f.write(r)
+            for c in keys:
+                #a=a is not a part of the dict (since always R2=1, need to add it to the file to get the rows/columns to match
+                if c==r:
+                    f.write("\t1")
+                    continue
+                try:
+                    f.write("\t{}".format(R_dict['{}-{}'.format(r,c)]))
+                except KeyError:
+                    try:
+                        f.write("\t{}".format(R_dict['{}-{}'.format(c,r)]))
+                    except KeyError:
+                        f.write("\t")
+                        logging.warning("Warning: Couldn't write data for the combination {} and {}".format(c,r)) 
+            f.write("\n")
+
+    #Call the heatmap function
+    if len(R_dict.keys()) > 2:
+        make_heatmap(R_dict,heatmap_fn)
+
 def load_fpkm_counts (file):
     """
     Reads FPKM file and returns a dict of counts.
@@ -95,12 +140,17 @@ def load_fpkm_counts (file):
             except ValueError:
                 FPKM_idx = 9
             # Iterate through the file
-            for line in fh:
-                line = line.strip()
-                cols = line.split("\t")
-                gene_id = cols[0]
-                FPKM = cols[FPKM_idx]
-                counts[gene_id] = FPKM
+            try:
+                for line in fh:
+                    line = line.strip()
+                    cols = line.split("\t")
+                    gene_id = cols[0]
+                    FPKM = cols[FPKM_idx]
+                    counts[gene_id] = FPKM
+            except IndexError:
+                logging.critical ("One of the input files is not in a valid format, are you sure that it's a FPKM file?\nExiting")
+                sys.exit()
+
     except IOError as e:
         logging.error("Error loading cufflinks FPKM file: {}\n{}".format(file, e))
         raise IOError(e)
@@ -124,6 +174,7 @@ def load_summary_fpkm_counts (file):
     
     # Read the counts file
     try:
+
         with open(file, 'r') as fh:
             header = fh.readline()
             sample_names = header.split("\t")[2:]
@@ -151,11 +202,9 @@ def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear
     Returns a dict containing filenames of PNG and PDF graphs as a dict for 
     each sample.
     """
-    
     # Output filename
-    if output_fn is False:
-        output_fn = "{}_{}".format(x_lab, y_lab)
-    
+    if output_fn is None:
+        output_fn = "{}-{}".format(x_lab, y_lab)
     # SET UP PLOT
     fig = plt.figure()
     axes = fig.add_subplot(111, aspect=1.0)
@@ -213,13 +262,110 @@ def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear
     logging.info("Saving to {} and {}".format(png_fn, pdf_fn))
     plt.savefig(png_fn)
     plt.savefig(pdf_fn)
-
-    # Return the filenames
-    return {'png': png_fn, 'pdf': pdf_fn}
-
-
     
+    # Return the filenames and R2
+    return {'png': png_fn, 'pdf': pdf_fn, output_fn:r_squared }
+
+
+def make_heatmap(data, heatmap_fn):
+    """
+    Takes a dict of r2 values and generates a heatmap using matplotlib
+    """
     
+    #list the sample names
+    names=set()
+    for i in data.keys():
+        names.update(i.split('-'))
+    names=sorted(list(names))
+    
+    #If the sample looks like it's form a NGI project, do specific cleaning
+    clean_names=[]
+    for i in names:
+        i=i.split(".")[0]   #Remove everything after the first dot
+        if i.endswith('Aligned'):
+            i = i[:-7]
+        clean_names.append(i)
+    
+    matrix = []
+    #Generate the data matrix (list of lists) 
+    for idx, x in enumerate(names):
+        matrix.append([])
+        for idy, y in enumerate(names):
+            v = 0
+            try:
+                v = data["{}-{}".format(x,y)]
+            except KeyError:
+                try:
+                    v = data["{}-{}".format(y,x)]
+                except KeyError:
+                    if x == y:
+                        v = 1
+            matrix[idx].append(v)
+
+    ### Turn data into numpy aray:
+    data = np.array(matrix)
+   
+    fig, ax = plt.subplots()
+
+
+    ## Dynamically change font size
+    if len(clean_names) >= 20 :
+        ax.xaxis.label.set_fontsize(4)
+        ax.yaxis.label .set_fontsize(4)
+    elif len(clean_names) >= 10:
+        ax.xaxis.label.set_fontsize(8)
+        ax.yaxis.label .set_fontsize(8)
+    
+
+    #set size
+    heatmap = ax.pcolor(data, cmap='YlOrRd', vmin=0, vmax=1)
+    fig = plt.gcf()
+    ax.set_frame_on(False)
+    
+    #make the plot square
+    plt.gca().set_aspect('equal', adjustable='box')
+
+    # put the major ticks at the middle of each cell
+    ax.set_yticks(np.arange(data.shape[0]) +0.5 , minor=False)
+    ax.set_xticks(np.arange(data.shape[1]) +0.5 , minor=False)
+    
+    # want a more natural, table-like display
+    ax.invert_yaxis()
+    
+    #adjust plot position to make room for longer sample names. 
+    #This does creat a bit of whitespace
+    plt.subplots_adjust(bottom=0.4, right=None, left=0.3, top = None)
+    
+    plt.colorbar(heatmap, ax=ax) 
+
+    # Set the labels
+    labels = clean_names
+    ax.set_xticklabels(labels, minor=False)
+    ax.set_yticklabels(labels, minor=False)
+    
+    # rotate the plot
+    plt.xticks(rotation=90)
+
+    ax.grid(False)
+    # Turn off all the ticks
+    ax = plt.gca()
+   
+    plt.title("Heatmap of R2 values")
+    #remove small ticks
+    for t in ax.xaxis.get_major_ticks():
+        t.tick1On = False
+        t.tick2On = False
+    for t in ax.yaxis.get_major_ticks():
+        t.tick1On = False
+        t.tick2On = False
+    logging.info("Saving heatmap to {}.png and {}.pdf".format(heatmap_fn,heatmap_fn))
+    pdf_fn = "{}.pdf".format(heatmap_fn)
+    png_fn = "{}.png".format(heatmap_fn)
+    plt.savefig(pdf_fn)
+    plt.savefig(png_fn)
+    return None  
+    
+
 if __name__ == "__main__":
     # Command line arguments
     parser = argparse.ArgumentParser("Make a scatter plot of FPKM counts between conditions")
@@ -233,8 +379,10 @@ if __name__ == "__main__":
                         help="Level of log messages to display")
     parser.add_argument("-u", "--log-output", dest="log_output", default='stdout',
                         help="Log output filename. Default: stdout")
-    parser.add_argument("input_files", metavar='<input files>', nargs=2,
+    parser.add_argument("input_files", metavar='<input files>', nargs='+',
                         help="List of summary FPKM / cufflinks FPKM results files. See README.MD for more information.")
+    parser.add_argument("-f", "--heatmap", dest="heatmap_fn", default='heatmap',
+                        help="Name of heatmap output")
     kwargs = vars(parser.parse_args())
     
     # Initialise logger
