@@ -98,7 +98,7 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
     for i in R_dict.keys():
         keys.update(i.split('-'))
     keys=sorted(list(keys))
-    with open('R2_values.csv', 'w') as f:
+    with open('R2_values.tsv', 'w') as f:
         f.write("\t{}\n".format("\t".join(keys)))
         # r for rows and c for columns in the matrix
         for r in keys:
