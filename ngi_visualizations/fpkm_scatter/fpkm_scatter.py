@@ -12,21 +12,29 @@ with multiple samples.
 from __future__ import print_function
 
 import argparse
+import coloredlogs
 import logging
 import numpy as np
 import os
 import re
 import sys
+
 # Import matplot lib but avoid default X environment
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+# Set up logging
+logger = logging.getLogger('fpkm_scatter')
+coloredlogs.DEFAULT_FIELD_STYLES['levelname'] = {'color': 'blue' }
+coloredlogs.install(fmt='[ %(levelname)7s ] %(message)s')
+
 def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts', linear=False, heatmap_fn='heatmap_fn'):
     """
     Main function. Takes input files and makes a plot.
     """
-    R_dict={}
+
+    R_dict = {}
 
     # First off, assume that we have two FPKM
     if summary is False:
@@ -49,15 +57,16 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
                 # Make the plot
                 plot_filenames = plot_fpkm_scatter(sample_1, sample_2, sample_1_name, sample_2_name, output_fn=output_fn, linear=linear)
 
-                # Extract the R-value
-                # Get the key from the sample names
-                fn_key = "{}-{}".format(sample_1_name, sample_2_name)
-                R_dict[fn_key]= plot_filenames[fn_key]
+                if plot_filenames is not None:
+                    # Extract the R-value
+                    # Get the key from the sample names
+                    fn_key = "{}-{}".format(sample_1_name, sample_2_name)
+                    R_dict[fn_key] = plot_filenames[fn_key]
 
     # We have a summary file
     else:
        if len(input_files) !=2:
-            logging.critical("'--summary' currently only works for two files")
+            logger.critical("'--summary' currently only works for two files")
             sys.exit()
 
        input_1 = os.path.realpath(input_files[0])
@@ -84,11 +93,12 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
                condition_2[cond_2_sample]
                outfile = "{}_{}-{}_{}".format(cond_1_basename, cond_1_sample, cond_2_basename, cond_2_sample)
                plot_filenames = plot_fpkm_scatter(condition_1[cond_1_sample], condition_2[cond_2_sample], cond_1_sample, cond_2_sample, output_fn=outfile, linear=linear)
-               #Add to R_dict
+
+               # Add to R_dict
                fn_key = "{}-{}".format(cond_1_sample,cond_2_sample )
                R_dict[fn_key]= plot_filenames[outfile]
            except KeyError:
-               logging.warning("Warning: Sample {} not found in {}".format(cond_2_sample, cond_2_basename))
+               logger.warning("Warning: Sample {} not found in {}".format(cond_2_sample, cond_2_basename))
                continue
 
     # Save R2 values in a matrix to file
@@ -114,7 +124,7 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
                         f.write("\t{}".format(R_dict['{}-{}'.format(c,r)]))
                     except KeyError:
                         f.write("\t")
-                        logging.warning("Warning: Couldn't write data for the combination {} and {}".format(c,r))
+                        logger.warning("Warning: Couldn't write data for the combination {} and {}".format(c,r))
             f.write("\n")
 
     # Call the heatmap function
@@ -129,7 +139,7 @@ def load_fpkm_counts (file):
     """
 
     counts = {}
-    logging.info("Processing {}".format(file))
+    logger.info("Processing {}".format(file))
     try:
         with open(file, 'r') as fh:
             # Read the header
@@ -147,11 +157,11 @@ def load_fpkm_counts (file):
                     FPKM = cols[FPKM_idx]
                     counts[gene_id] = FPKM
             except IndexError:
-                logging.critical ("One of the input files is not in a valid format, are you sure that it's a FPKM file?\nExiting")
+                logger.critical ("One of the input files is not in a valid format, are you sure that it's a FPKM file?\nExiting")
                 sys.exit()
 
     except IOError as e:
-        logging.error("Error loading cufflinks FPKM file: {}\n{}".format(file, e))
+        logger.error("Error loading cufflinks FPKM file: {}\n{}".format(file, e))
         raise IOError(e)
 
     return counts
@@ -183,7 +193,7 @@ def load_summary_fpkm_counts (file):
                 for i in range(2, len(sections)-2):
                     counts[sample_names[i]][gene_id] = sections[i]
     except IOError as e:
-        logging.error("Error - could not read FPKM summary file: {}\n{}".format(file, e))
+        logger.error("Error - could not read FPKM summary file: {}\n{}".format(file, e))
         return None
 
     return counts
@@ -219,8 +229,14 @@ def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear
         else:
             x_vals.append(float(sample_1[gene]))
             y_vals.append(float(sample_2[gene]))
+
+    missing_genes_pct = float(missing_genes) / float(len(sample_1.keys()))
     if missing_genes > 0:
-        logging.warn("Warning: {} genes mentioned in sample 1 not found in sample 2".format(missing_genes))
+        logger.warn("Warning: {} ({:.1f}%) genes mentioned in sample 1 not found in sample 2".format(missing_genes, missing_genes_pct*100.0))
+
+    if missing_genes_pct > 0.4:
+        logger.error("Percentage of missing genes too high (over 40%)! Aborting '{}' and '{}'.".format(x_lab, y_lab))
+        return None
 
     # Calculate the r squared
     corr = np.corrcoef(x_vals, y_vals)[0,1]
@@ -255,7 +271,7 @@ def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear
     # SAVE OUTPUT
     png_fn = "{}.png".format(output_fn)
     pdf_fn = "{}.pdf".format(output_fn)
-    logging.info("Saving to {} and {}".format(png_fn, pdf_fn))
+    logger.info("Saving to {} and {}".format(png_fn, pdf_fn))
     plt.savefig(png_fn)
     plt.savefig(pdf_fn)
 
@@ -353,7 +369,7 @@ def make_heatmap(data, heatmap_fn):
     for t in ax.yaxis.get_major_ticks():
         t.tick1On = False
         t.tick2On = False
-    logging.info("Saving heatmap to {}.png and {}.pdf".format(heatmap_fn,heatmap_fn))
+    logger.info("Saving heatmap to {}.png and {}.pdf".format(heatmap_fn,heatmap_fn))
     pdf_fn = "{}.pdf".format(heatmap_fn)
     png_fn = "{}.png".format(heatmap_fn)
     plt.savefig(pdf_fn)
