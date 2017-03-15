@@ -102,7 +102,7 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
     keys = set()
     for i in R_dict.keys():
         keys.update(i.split('-'))
-    keys=sorted(list(keys))
+    keys = sorted(list(keys))
     with open('R2_values.tsv', 'w') as f:
         f.write("\t{}\n".format("\t".join(keys)))
         # r for rows and c for columns in the matrix
@@ -110,7 +110,7 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
             f.write(r)
             for c in keys:
                 # a=a is not a part of the dict (since always R2=1, need to add it to the file to get the rows/columns to match
-                if c==r:
+                if c == r:
                     f.write("\t1")
                     continue
                 try:
@@ -229,16 +229,16 @@ def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear
 
     missing_genes_pct = float(missing_genes) / float(len(sample_1.keys()))
     if missing_genes > 0:
-        logger.warn("Warning: {} ({:.1f}%) genes mentioned in sample 1 not found in sample 2".format(missing_genes, missing_genes_pct*100.0))
+        logger.error("Warning: {} ({:.1f}%) genes mentioned in sample 1 not found in sample 2".format(missing_genes, missing_genes_pct*100.0))
 
-    if missing_genes_pct > 0.4:
-        logger.error("Percentage of missing genes too high (over 40%)! Aborting '{}' and '{}'.".format(x_lab, y_lab))
+    if missing_genes_pct > 0.3:
+        logger.critical("Percentage of missing genes too high (over 30%)! Aborting '{}' and '{}'.".format(x_lab, y_lab))
         return None
 
     # Calculate the r squared
     corr = np.corrcoef(x_vals, y_vals)[0,1]
     r_squared = corr ** 2
-    logger.info("R squared for {} = {}".format(output_fn, r_squared))
+    logger.warn("R squared for {} = {}".format(output_fn, r_squared))
 
     # Make the plot
     axes.plot(x_vals, y_vals, 'o', markersize=1)
@@ -268,9 +268,10 @@ def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear
     # SAVE OUTPUT
     png_fn = "{}.png".format(output_fn)
     pdf_fn = "{}.pdf".format(output_fn)
-    logger.info("Saving to {} and {}".format(png_fn, pdf_fn))
+    logger.debug("Saving to {} and {}".format(png_fn, pdf_fn))
     plt.savefig(png_fn)
     plt.savefig(pdf_fn)
+    plt.close(fig)
 
     # Return the filenames and R2
     return {'png': png_fn, 'pdf': pdf_fn, output_fn:r_squared }
@@ -340,8 +341,8 @@ def make_heatmap(data, heatmap_fn):
     # want a more natural, table-like display
     ax.invert_yaxis()
 
-    #adjust plot position to make room for longer sample names.
-    #This does creat a bit of whitespace
+    # adjust plot position to make room for longer sample names.
+    # This does creat a bit of whitespace
     plt.subplots_adjust(bottom=0.4, right=None, left=0.3, top = None)
 
     plt.colorbar(heatmap, ax=ax)
@@ -353,7 +354,6 @@ def make_heatmap(data, heatmap_fn):
 
     # rotate the plot
     plt.xticks(rotation=90)
-
     ax.grid(False)
     # Turn off all the ticks
     ax = plt.gca()
@@ -402,7 +402,7 @@ if __name__ == "__main__":
     else:
         logger = logging.getLogger('fpkm_scatter')
         coloredlogs.DEFAULT_FIELD_STYLES['levelname'] = {'color': 'blue' }
-        coloredlogs.install(level=loglevel, fmt='[ %(levelname)7s ] %(message)s')
+        coloredlogs.install(level=loglevel, fmt='[ %(levelname)8s ] %(message)s')
 
     # Remove logging parameters
     kwargs.pop('verbose', None)
