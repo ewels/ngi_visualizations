@@ -24,7 +24,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts', linear=False, heatmap_fn='heatmap_fn'):
+def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts', linear=False, heatmap_fn='heatmap_fn', force_plot=False):
     """
     Main function. Takes input files and makes a plot.
     """
@@ -51,7 +51,7 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
                 sample_2_name = os.path.splitext(os.path.basename(input_2))[0]
 
                 # Make the plot
-                plot_filenames = plot_fpkm_scatter(sample_1, sample_2, sample_1_name, sample_2_name, output_fn=output_fn, linear=linear)
+                plot_filenames = plot_fpkm_scatter(sample_1, sample_2, sample_1_name, sample_2_name, output_fn=output_fn, linear=linear, force_plot=force_plot)
 
                 if plot_filenames is not None:
                     # Extract the R-value
@@ -196,7 +196,7 @@ def load_summary_fpkm_counts (file):
 
 
 
-def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear=False):
+def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear=False, force_plot=False):
     """
     Plots scatter plot of FPKM counts. Also calculates r-squared correlation
     and prints this to STDOUT as well as including it in the graph.
@@ -228,7 +228,7 @@ def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear
 
     missing_genes_pct = float(missing_genes) / float(len(sample_1.keys()))
     if missing_genes > 0:
-        logger.error("{: >8} / {: <8} ({:.1f}%) genes mentioned in sample 1 not found in sample 2".format(missing_genes, len(sample_1.keys()), missing_genes_pct*100.0))
+        logger.error("{: >8} / {: <8} ({:4.1f}%) genes mentioned in '{}' not found in '{}'".format(missing_genes, len(sample_1.keys()), missing_genes_pct*100.0, x_lab, y_lab))
 
     # Check how many mismatched genes go the other way
     missing_s2_genes = 0
@@ -240,10 +240,10 @@ def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear
 
     missing_s2_genes_pct = float(missing_s2_genes) / float(len(sample_2.keys()))
     if missing_s2_genes > 0:
-        logger.error("{: >8} / {: <8} ({:.1f}%) genes mentioned in sample 2 not found in sample 1".format(missing_s2_genes, len(sample_2.keys()), missing_s2_genes_pct*100.0))
+        logger.error("{: >8} / {: <8} ({:4.1f}%) genes mentioned in '{}' not found in '{}'".format(missing_s2_genes, len(sample_2.keys()), missing_s2_genes_pct*100.0, y_lab, x_lab))
 
 
-    if max(missing_genes_pct, missing_s2_genes_pct) > 0.3:
+    if max(missing_genes_pct, missing_s2_genes_pct) > 0.3 and not force_plot:
         logger.critical("Percentage of missing genes too high (over 30%)! Aborting '{}' and '{}'.".format(x_lab, y_lab))
         return None
 
@@ -403,6 +403,8 @@ if __name__ == "__main__":
                         help="Name of heatmap output")
     parser.add_argument("-v", "--verbose", dest="verbose", action='store_true',
                         help="Use verbose logging")
+    parser.add_argument("-a", "--force", dest="force_plot", action='store_true',
+                        help="Force generation of plot, even if mismatched gene names")
     kwargs = vars(parser.parse_args())
 
     # Initialise logger
