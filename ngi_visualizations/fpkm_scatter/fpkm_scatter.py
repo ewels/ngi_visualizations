@@ -24,17 +24,13 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-# Set up logging
-logger = logging.getLogger('fpkm_scatter')
-coloredlogs.DEFAULT_FIELD_STYLES['levelname'] = {'color': 'blue' }
-coloredlogs.install(fmt='[ %(levelname)7s ] %(message)s')
-
 def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts', linear=False, heatmap_fn='heatmap_fn'):
     """
     Main function. Takes input files and makes a plot.
     """
 
     R_dict = {}
+    logging.debug("Starting execution")
 
     # First off, assume that we have two FPKM
     if summary is False:
@@ -226,6 +222,7 @@ def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear
             sample_2[gene]
         except KeyError:
             missing_genes += 1
+            logger.debug("Could not find gene '{}' in sample 2".format(gene))
         else:
             x_vals.append(float(sample_1[gene]))
             y_vals.append(float(sample_2[gene]))
@@ -241,7 +238,7 @@ def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear
     # Calculate the r squared
     corr = np.corrcoef(x_vals, y_vals)[0,1]
     r_squared = corr ** 2
-    print ("R squared for {} = {}".format(output_fn, r_squared))
+    logger.info("R squared for {} = {}".format(output_fn, r_squared))
 
     # Make the plot
     axes.plot(x_vals, y_vals, 'o', markersize=1)
@@ -374,6 +371,7 @@ def make_heatmap(data, heatmap_fn):
     png_fn = "{}.png".format(heatmap_fn)
     plt.savefig(pdf_fn)
     plt.savefig(png_fn)
+    plt.close(fig)
 
 
 if __name__ == "__main__":
@@ -385,24 +383,29 @@ if __name__ == "__main__":
                         help="Plot output filename base. Default: sample1_sample2.png / .pdf")
     parser.add_argument("-n", "--linear", dest="linear", action='store_true',
                         help="Plot using linear axes instead of log10")
-    parser.add_argument("-l", "--log", dest="log_level", default='info', choices=['debug', 'info', 'warning'],
-                        help="Level of log messages to display")
     parser.add_argument("-u", "--log-output", dest="log_output", default='stdout',
                         help="Log output filename. Default: stdout")
     parser.add_argument("input_files", metavar='<input files>', nargs='+',
                         help="List of summary FPKM / cufflinks FPKM results files. See README.MD for more information.")
     parser.add_argument("-f", "--heatmap", dest="heatmap_fn", default='heatmap',
                         help="Name of heatmap output")
+    parser.add_argument("-v", "--verbose", dest="verbose", action='store_true',
+                        help="Use verbose logging")
     kwargs = vars(parser.parse_args())
 
     # Initialise logger
-    numeric_log_level = getattr(logging, kwargs['log_level'].upper(), None)
+    loglevel = 'DEBUG' if kwargs['verbose'] else 'INFO'
     if kwargs['log_output'] != 'stdout':
-        logging.basicConfig(filename=kwargs['log_output'], format='', level=numeric_log_level)
+        logging.basicConfig(filename=kwargs['log_output'])
+        logger = logging.getLogger('fpkm_scatter')
+        logger.setLevel(loglevel)
     else:
-        logging.basicConfig(format='', level=numeric_log_level)
+        logger = logging.getLogger('fpkm_scatter')
+        coloredlogs.DEFAULT_FIELD_STYLES['levelname'] = {'color': 'blue' }
+        coloredlogs.install(level=loglevel, fmt='[ %(levelname)7s ] %(message)s')
+
     # Remove logging parameters
-    kwargs.pop('log_level', None)
+    kwargs.pop('verbose', None)
     kwargs.pop('log_output', None)
 
     # Call plot_observed_genes()
