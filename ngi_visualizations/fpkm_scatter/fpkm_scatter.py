@@ -94,7 +94,7 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
                fn_key = "{}-{}".format(cond_1_sample,cond_2_sample )
                R_dict[fn_key]= plot_filenames[outfile]
            except KeyError:
-               logger.warning("Warning: Sample {} not found in {}".format(cond_2_sample, cond_2_basename))
+               logger.error("Sample {} not found in {}".format(cond_2_sample, cond_2_basename))
                continue
 
     # Save R2 values in a matrix to file
@@ -120,7 +120,7 @@ def make_fpkm_scatter_plots (input_files, summary=False, output_fn='gene_counts'
                         f.write("\t{}".format(R_dict['{}-{}'.format(c,r)]))
                     except KeyError:
                         f.write("\t")
-                        logger.warning("Warning: Couldn't write data for the combination {} and {}".format(c,r))
+                        logger.critical("Couldn't write data for the combination {} and {}".format(c,r))
             f.write("\n")
 
     # Call the heatmap function
@@ -220,18 +220,30 @@ def plot_fpkm_scatter (sample_1, sample_2, x_lab, y_lab, output_fn=False, linear
     for gene in sample_1.keys():
         try:
             sample_2[gene]
+            x_vals.append(float(sample_1[gene]))
+            y_vals.append(float(sample_2[gene]))
         except KeyError:
             missing_genes += 1
             logger.debug("Could not find gene '{}' in sample 2".format(gene))
-        else:
-            x_vals.append(float(sample_1[gene]))
-            y_vals.append(float(sample_2[gene]))
 
     missing_genes_pct = float(missing_genes) / float(len(sample_1.keys()))
     if missing_genes > 0:
-        logger.error("Warning: {} ({:.1f}%) genes mentioned in sample 1 not found in sample 2".format(missing_genes, missing_genes_pct*100.0))
+        logger.error("{: >8} / {: <8} ({:.1f}%) genes mentioned in sample 1 not found in sample 2".format(missing_genes, len(sample_1.keys()), missing_genes_pct*100.0))
 
-    if missing_genes_pct > 0.3:
+    # Check how many mismatched genes go the other way
+    missing_s2_genes = 0
+    for gene in sample_2.keys():
+        try:
+            sample_1[gene]
+        except KeyError:
+            missing_s2_genes += 1
+
+    missing_s2_genes_pct = float(missing_s2_genes) / float(len(sample_2.keys()))
+    if missing_s2_genes > 0:
+        logger.error("{: >8} / {: <8} ({:.1f}%) genes mentioned in sample 2 not found in sample 1".format(missing_s2_genes, len(sample_2.keys()), missing_s2_genes_pct*100.0))
+
+
+    if max(missing_genes_pct, missing_s2_genes_pct) > 0.3:
         logger.critical("Percentage of missing genes too high (over 30%)! Aborting '{}' and '{}'.".format(x_lab, y_lab))
         return None
 
